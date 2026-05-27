@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+.pytest_cache/
+
+# Notebook checkpoints
+.ipynb_checkpoints/
+
+# Local IDE / Claude Code state
+.claude/
+.vscode/
+.idea/
+
+# Generated animation artifacts -- recreated by running the notebook
+outputs/
+
+# Smoke-test scratch directory
+tests/_smoke_out/
+
+# OS junk
+.DS_Store
+Thumbs.db
