@@ -57,3 +57,17 @@ def test_plot_handles_custom_maze_shape():
     fig, ax = plot_policy_and_value(policy, v, (0, 0), (3, 4), mini)
     assert ax.has_data()
     plt.close(fig)
+
+
+def test_plot_renders_holes_and_portals():
+    holes = [(5, 5)]
+    portals = [((1, 1), (8, 8))]
+    policy, v, _ = policy_iteration(
+        TREASURE, GAMMA, DEFAULT_MAZE, seed=0, holes=holes, portals=portals,
+    )
+    fig, ax = plot_policy_and_value(
+        policy, v, TREASURE, HARTY, DEFAULT_MAZE,
+        holes=holes, portals=portals,
+    )
+    assert ax.has_data()
+    plt.close(fig)

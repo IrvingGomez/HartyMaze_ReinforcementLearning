@@ -73,3 +73,33 @@ def test_animate_path_builds_without_value_or_policy():
     path = simulate_path(policy, HARTY, TREASURE, DEFAULT_MAZE, max_steps=200)
     anim = animate_path(path, TREASURE, DEFAULT_MAZE)
     assert anim is not None
+
+
+def test_simulate_path_stops_on_hole():
+    # Force a policy that walks Harty straight into a hole.
+    rows, cols = DEFAULT_MAZE.shape
+    policy = np.full((rows, cols), 'down', dtype=object)
+    policy[TREASURE] = ''
+    holes = [(1, 0)]
+    path = simulate_path(
+        policy, (0, 0), TREASURE, DEFAULT_MAZE, max_steps=20, holes=holes,
+    )
+    end_cell, _ = path[-1]
+    assert end_cell == (1, 0)
+
+
+def test_animate_path_builds_with_holes_and_portals():
+    holes = [(5, 5)]
+    portals = [((1, 1), (8, 8))]
+    policy, v, _ = policy_iteration(
+        TREASURE, GAMMA, DEFAULT_MAZE, seed=0, holes=holes, portals=portals,
+    )
+    path = simulate_path(
+        policy, HARTY, TREASURE, DEFAULT_MAZE,
+        max_steps=200, holes=holes, portals=portals,
+    )
+    anim = animate_path(
+        path, TREASURE, DEFAULT_MAZE,
+        holes=holes, portals=portals, value=v, policy=policy,
+    )
+    assert anim is not None

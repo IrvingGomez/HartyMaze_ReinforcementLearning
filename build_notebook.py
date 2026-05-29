@@ -78,12 +78,20 @@ Change the values below to play with the maze. Then rerun every cell.
 - `HARTY` is the cell where Harty stands.
 - `DISCOUNT_RATE` (gamma) decides how much Harty cares about future steps.
   Closer to 1 = patient; closer to 0 = short-sighted.
+- `HOLES` is a list of cells that end the game with reward -1. Leave empty
+  for none.
+- `PORTALS` is a list of pairs of cells. Each pair teleports Harty between
+  its two endpoints (either way). Up to two pairs are supported; leave the
+  list empty for none.
 """))
 
 cells.append(code("""MAZE = DEFAULT_MAZE     # replace with your own np.array of wall codes 0-14
 TREASURE = (0, 4)
 HARTY = (9, 9)
 DISCOUNT_RATE = 0.97
+
+HOLES = []              # e.g. [(3, 3), (5, 7)]
+PORTALS = []            # e.g. [((1, 1), (8, 8))]  -- up to 2 pairs
 
 rows, cols = MAZE.shape
 
@@ -98,8 +106,26 @@ assert TREASURE != HARTY, 'TREASURE and HARTY cannot share a cell'
 trap_codes = {9, 10, 11, 12}
 assert int(MAZE[HARTY]) not in trap_codes, 'HARTY is in a fully-walled cell, he cannot move'
 
+assert len(PORTALS) <= 2, 'at most two portal pairs are supported'
+for pair in PORTALS:
+    assert len(pair) == 2, 'each portal pair must have exactly two cells'
+
+reserved = {TREASURE, HARTY, *HOLES}
+for pair in PORTALS:
+    for cell in pair:
+        assert 0 <= cell[0] < rows and 0 <= cell[1] < cols, f'portal cell {cell} outside grid'
+        assert cell not in reserved, f'portal cell {cell} clashes with treasure/Harty/hole'
+        reserved.add(cell)
+
+for hole in HOLES:
+    assert 0 <= hole[0] < rows and 0 <= hole[1] < cols, f'hole {hole} outside grid'
+    assert hole != TREASURE, 'hole cannot share a cell with the treasure'
+    assert hole != HARTY, 'hole cannot share a cell with Harty'
+
 print(f'Maze: {rows} x {cols}')
-print(f'Treasure at {TREASURE}, Harty at {HARTY}, gamma = {DISCOUNT_RATE}')"""))
+print(f'Treasure at {TREASURE}, Harty at {HARTY}, gamma = {DISCOUNT_RATE}')
+print(f'Holes: {HOLES}')
+print(f'Portals: {PORTALS}')"""))
 
 cells.append(md("""## 3. The maze
 
@@ -110,6 +136,7 @@ chose. No learning yet, just the picture.
 cells.append(code("""V_empty = np.zeros_like(MAZE, dtype=float)
 fig, _ = plot_value_only(
     V_empty, TREASURE, HARTY, MAZE,
+    holes=HOLES, portals=PORTALS,
     title='The maze (no value yet)',
 )
 plt.show()"""))
@@ -125,10 +152,14 @@ Hot colors (purple) = high value. Cold colors (red) = low value.
 You will see that random walking is bad: most cells light up only a little.
 """))
 
-cells.append(code("""V_random = uniform_random_policy_value(TREASURE, DISCOUNT_RATE, MAZE)
+cells.append(code("""V_random = uniform_random_policy_value(
+    TREASURE, DISCOUNT_RATE, MAZE,
+    holes=HOLES, portals=PORTALS,
+)
 
 fig, _ = plot_value_only(
     V_random, TREASURE, HARTY, MAZE,
+    holes=HOLES, portals=PORTALS,
     title='Before learning: value under a random policy',
 )
 plt.show()"""))
@@ -142,9 +173,11 @@ see him bump into walls, backtrack, and rarely reach the chest in time.
 cells.append(code("""random_path = simulate_path(
     uniform_random_action, HARTY, TREASURE, MAZE,
     max_steps=80, seed=0,
+    holes=HOLES, portals=PORTALS,
 )
 anim_random = animate_path(
     random_path, TREASURE, MAZE,
+    holes=HOLES, portals=PORTALS,
     value=V_random,
     title='Harty wandering with the random policy',
 )
@@ -169,6 +202,7 @@ introducing the maze without giving away the policy.
 
 cells.append(code("""anim_random_plain = animate_path(
     random_path, TREASURE, MAZE,
+    holes=HOLES, portals=PORTALS,
     title='Harty wandering (plain)',
 )
 HTML(anim_random_plain.to_jshtml())"""))
@@ -191,11 +225,13 @@ treasure.
 
 cells.append(code("""policy, V, cycles = policy_iteration(
     TREASURE, DISCOUNT_RATE, MAZE, seed=0,
+    holes=HOLES, portals=PORTALS,
 )
 print(f'Policy iteration converged in {cycles} cycles.')
 
 fig, _ = plot_policy_and_value(
     policy, V, TREASURE, HARTY, MAZE,
+    holes=HOLES, portals=PORTALS,
     title='After learning: best policy and value',
 )
 plt.show()"""))
@@ -208,9 +244,11 @@ treasure with no backtracking.
 
 cells.append(code("""best_path = simulate_path(
     policy, HARTY, TREASURE, MAZE, max_steps=80,
+    holes=HOLES, portals=PORTALS,
 )
 anim_best = animate_path(
     best_path, TREASURE, MAZE,
+    holes=HOLES, portals=PORTALS,
     value=V,
     policy=policy,
     title='Harty following the best policy',
@@ -236,6 +274,7 @@ path Harty takes to reach the treasure.
 
 cells.append(code("""anim_best_plain = animate_path(
     best_path, TREASURE, MAZE,
+    holes=HOLES, portals=PORTALS,
     title='Harty following the best policy (plain)',
 )
 HTML(anim_best_plain.to_jshtml())"""))

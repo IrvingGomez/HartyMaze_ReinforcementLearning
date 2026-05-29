@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import matplotlib.image as mpimg
 
-from environment import ACTION_SYMBOLS
+from environment import ACTION_SYMBOLS, is_terminal
 from maze_renderer import draw_maze
 
 
@@ -26,6 +26,11 @@ HARTY_IMAGE_PATHS = {
     'left':  IMAGES_DIR / 'Harty_left.png',
     'right': IMAGES_DIR / 'Harty_right.png',
 }
+HOLE_IMAGE_PATH = IMAGES_DIR / 'Dead.png'
+PORTAL_IMAGE_PATHS = [
+    IMAGES_DIR / 'Portal1.png',
+    IMAGES_DIR / 'Portal2.png',
+]
 
 
 def make_value_colormap():
@@ -58,12 +63,13 @@ def plot_value_heatmap(ax, value, cmap=None, vmin=-1.0, vmax=1.0):
     )
 
 
-def overlay_policy_arrows(ax, policy, treasure=None, fontsize=18, color='black'):
-    """Write the action arrow at the center of each cell, skipping the treasure."""
+def overlay_policy_arrows(ax, policy, treasure=None, holes=(),
+                          fontsize=18, color='black'):
+    """Write the action arrow at the center of each cell, skipping terminals."""
     rows, cols = policy.shape
     for r in range(rows):
         for c in range(cols):
-            if treasure is not None and (r, c) == treasure:
+            if treasure is not None and is_terminal((r, c), treasure, holes):
                 continue
             symbol = ACTION_SYMBOLS.get(policy[r, c], '')
             if symbol:
@@ -113,6 +119,31 @@ def load_harty_image(facing='idle'):
     return mpimg.imread(path)
 
 
+def load_hole_image():
+    return mpimg.imread(HOLE_IMAGE_PATH)
+
+
+def load_portal_image(pair_index):
+    return mpimg.imread(PORTAL_IMAGE_PATHS[pair_index])
+
+
+def overlay_holes(ax, holes):
+    """Stamp Dead.png on every hole cell."""
+    if not holes:
+        return
+    img = load_hole_image()
+    for cell in holes:
+        overlay_image_at_cell(ax, img, cell)
+
+
+def overlay_portals(ax, portals):
+    """Stamp Portal1.png on both cells of the first pair, Portal2.png on the second."""
+    for pair_idx, (a, b) in enumerate(portals):
+        img = load_portal_image(pair_idx)
+        overlay_image_at_cell(ax, img, a)
+        overlay_image_at_cell(ax, img, b)
+
+
 def plot_policy_and_value(
     policy,
     value,
@@ -120,6 +151,8 @@ def plot_policy_and_value(
     harty,
     maze,
     *,
+    holes=(),
+    portals=(),
     harty_facing='idle',
     cmap=None,
     vmin=-1.0,
@@ -127,12 +160,14 @@ def plot_policy_and_value(
     figsize=(7, 7),
     title=None,
 ):
-    """Compose the full picture: colors, walls, arrows, treasure, Harty."""
+    """Compose the full picture: colors, walls, arrows, hazards, treasure, Harty."""
     fig, ax = plt.subplots(figsize=figsize)
 
     plot_value_heatmap(ax, value, cmap=cmap, vmin=vmin, vmax=vmax)
     draw_maze(ax, maze)
-    overlay_policy_arrows(ax, policy, treasure=treasure)
+    overlay_policy_arrows(ax, policy, treasure=treasure, holes=holes)
+    overlay_holes(ax, holes)
+    overlay_portals(ax, portals)
     overlay_image_at_cell(ax, load_treasure_image(), treasure)
     overlay_image_at_cell(ax, load_harty_image(facing=harty_facing), harty)
 
@@ -148,6 +183,8 @@ def plot_value_only(
     harty,
     maze,
     *,
+    holes=(),
+    portals=(),
     harty_facing='idle',
     cmap=None,
     vmin=-1.0,
@@ -162,6 +199,8 @@ def plot_value_only(
 
     plot_value_heatmap(ax, value, cmap=cmap, vmin=vmin, vmax=vmax)
     draw_maze(ax, maze)
+    overlay_holes(ax, holes)
+    overlay_portals(ax, portals)
     overlay_image_at_cell(ax, load_treasure_image(), treasure)
     overlay_image_at_cell(ax, load_harty_image(facing=harty_facing), harty)
 

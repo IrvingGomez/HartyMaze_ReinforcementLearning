@@ -53,6 +53,9 @@ MAZE = DEFAULT_MAZE
 TREASURE = (0, 4)
 HARTY = (9, 9)
 
+HOLES = []              # e.g. [(3, 3), (5, 7)] -- stepping here ends the game
+PORTALS = []            # e.g. [((1, 1), (8, 8))] -- up to 2 pairs; both endpoints teleport
+
 rows, cols = MAZE.shape
 
 assert MAZE.ndim == 2, 'MAZE must be 2D'
@@ -64,7 +67,25 @@ assert TREASURE != HARTY
 trap_codes = {9, 10, 11, 12}
 assert int(MAZE[HARTY]) not in trap_codes, 'Harty would be stuck in this cell'
 
-print(f'Maze: {rows}x{cols}, treasure at {TREASURE}, Harty starts at {HARTY}')"""))
+assert len(PORTALS) <= 2, 'at most two portal pairs are supported'
+for pair in PORTALS:
+    assert len(pair) == 2, 'each portal pair must have exactly two cells'
+
+reserved = {TREASURE, HARTY, *HOLES}
+for pair in PORTALS:
+    for cell in pair:
+        assert 0 <= cell[0] < rows and 0 <= cell[1] < cols, f'portal cell {cell} outside grid'
+        assert cell not in reserved, f'portal cell {cell} clashes with treasure/Harty/hole'
+        reserved.add(cell)
+
+for hole in HOLES:
+    assert 0 <= hole[0] < rows and 0 <= hole[1] < cols, f'hole {hole} outside grid'
+    assert hole != TREASURE, 'hole cannot share a cell with the treasure'
+    assert hole != HARTY, 'hole cannot share a cell with Harty'
+
+print(f'Maze: {rows}x{cols}, treasure at {TREASURE}, Harty starts at {HARTY}')
+print(f'Holes: {HOLES}')
+print(f'Portals: {PORTALS}')"""))
 
 cells.append(md("""## Play!
 
@@ -77,7 +98,7 @@ Note: while the window is open this cell is "running"; the notebook will
 look busy until you close the window. That is expected.
 """))
 
-cells.append(code("""final_state = launch_game_window(MAZE, TREASURE, HARTY)
+cells.append(code("""final_state = launch_game_window(MAZE, TREASURE, HARTY, holes=HOLES, portals=PORTALS)
 final_state"""))
 
 cells.append(md("""## Inspect your final state
@@ -86,7 +107,8 @@ cells.append(md("""## Inspect your final state
 cells.append(code("""print(f'Position: {final_state.position}')
 print(f'Facing:   {final_state.facing}')
 print(f'Steps:    {final_state.steps_taken}')
-print(f'Won?      {final_state.won}')"""))
+print(f'Won?      {final_state.won}')
+print(f'Dead?     {final_state.dead}')"""))
 
 cells.append(md("""## Want a new game?
 

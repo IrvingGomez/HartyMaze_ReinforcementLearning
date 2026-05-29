@@ -80,3 +80,42 @@ def test_policy_evaluation_converges():
     q2 = policy_evaluation(policy, TREASURE, GAMMA, DEFAULT_MAZE, n_sweeps=400)
     # If converged, more sweeps shouldn't change Q materially.
     assert np.max(np.abs(q1 - q2)) < 1e-4
+
+
+def test_policy_iteration_marks_holes_as_terminal():
+    holes = [(5, 5)]
+    policy, v, _ = policy_iteration(
+        TREASURE, GAMMA, DEFAULT_MAZE, seed=0, holes=holes,
+    )
+    assert policy[holes[0]] == ''
+    assert v[holes[0]] == 0.0
+
+
+def test_policy_iteration_neighbor_of_hole_avoids_it():
+    # Place a hole at (0,5). Its neighbor under no-holes would prefer 'left'
+    # (lands on treasure). With the hole at (0,5) itself, (0,5) is terminal
+    # so we examine a different neighbor: (1,5) has code 6 (left + bottom),
+    # so it can only move up or right. Stepping onto (0,5) hole gives -1;
+    # the optimal policy should prefer right (to (1,6)) over up (into hole).
+    holes = [(0, 5)]
+    policy, _, _ = policy_iteration(
+        TREASURE, GAMMA, DEFAULT_MAZE, seed=0, holes=holes,
+    )
+    assert policy[(1, 5)] != 'up', 'optimal policy should not walk into the hole'
+
+
+def test_policy_iteration_with_portal_shortcut_yields_higher_value():
+    # Without portal: V at (9,9) is small (long way to treasure).
+    # With portal pairing (9,9) <-> (0,5): stepping any direction from (9,9)
+    # away from a wall takes Harty to a portal endpoint? No -- portals
+    # trigger on entry. So we use a portal at (9,8) <-> (0,5). Walking from
+    # (9,9) 'left' lands on (9,8) -> teleport to (0,5), then 'left' to
+    # treasure -> V at (9,9) should jump.
+    portals = [((9, 8), (0, 5))]
+    _, v_with, _ = policy_iteration(
+        TREASURE, GAMMA, DEFAULT_MAZE, seed=0, portals=portals,
+    )
+    _, v_without, _ = policy_iteration(
+        TREASURE, GAMMA, DEFAULT_MAZE, seed=0,
+    )
+    assert v_with[9, 9] > v_without[9, 9]

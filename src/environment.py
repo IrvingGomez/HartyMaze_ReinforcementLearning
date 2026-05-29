@@ -3,6 +3,14 @@
 The maze is a 2D numpy array of wall-codes 0-14, the same encoding used in
 the project's CLAUDE.md and in maze_renderer.py. Students can pass any maze
 of any rectangular shape; nothing here is hard-coded to 10x10.
+
+Two optional hazards extend the basic maze:
+    holes   -- iterable of (row, col). Stepping onto a hole ends the episode
+               with reward -1.
+    portals -- list of pairs ((cellA, cellB), ...). Stepping onto either
+               endpoint teleports the agent to its partner. The teleport
+               happens once per step, so a portal whose partner is another
+               portal does not chain.
 """
 
 import numpy as np
@@ -54,11 +62,26 @@ DEFAULT_MAZE = np.array([
 ])
 
 
+def apply_portal(position, portals):
+    """If `position` matches one endpoint of any portal pair, return its partner.
+
+    `portals` is an iterable of ((rA, cA), (rB, cB)) pairs. Lookup is by exact
+    tuple equality, so the caller is expected to pass tuples (not numpy ints).
+    """
+    for a, b in portals:
+        if position == a:
+            return b
+        if position == b:
+            return a
+    return position
+
+
 def next_state(position, action, maze):
     """Return the cell reached by taking `action` from `position`.
 
     The action is blocked (agent stays put) if the current cell's wall code
-    forbids it, or if the move would leave the grid.
+    forbids it, or if the move would leave the grid. Portals and hazards are
+    NOT applied here; see `step` for the full transition.
     """
     code = int(maze[position])
     if action in BLOCKED_ACTIONS_BY_CODE[code]:
@@ -75,12 +98,29 @@ def next_state(position, action, maze):
     return (next_row, next_col)
 
 
-def reward(next_position, treasure):
-    """Return 1 when stepping onto the treasure cell, 0 otherwise."""
-    return 1 if next_position == treasure else 0
+def reward(next_position, treasure, holes=()):
+    """+1 on the treasure, -1 on a hole, 0 elsewhere."""
+    if next_position == treasure:
+        return 1
+    if next_position in tuple(holes):
+        return -1
+    return 0
 
 
-def step(position, action, treasure, maze):
-    """Take one environment step. Returns (next_position, reward)."""
+def is_terminal(cell, treasure, holes=()):
+    return cell == treasure or cell in tuple(holes)
+
+
+def step(position, action, treasure, maze, holes=(), portals=()):
+    """Take one environment step. Returns (next_position, reward, done).
+
+    Order of operations:
+        1. Move per the action (walls + grid bounds).
+        2. Teleport once if the new cell is a portal endpoint.
+        3. Compute reward and done from the final cell.
+    """
     new_position = next_state(position, action, maze)
-    return new_position, reward(new_position, treasure)
+    new_position = apply_portal(new_position, portals)
+    r = reward(new_position, treasure, holes)
+    done = is_terminal(new_position, treasure, holes)
+    return new_position, r, done

@@ -1,26 +1,27 @@
-"""Play mode: Harty driven by clickable arrow buttons.
+"""Play mode: Harty driven by the arrow keys in a popup window.
 
 Pure logic (PlayState + handle_key) lives at the top so it can be unit-tested.
-The `launch_game` function wires the logic to an ipywidgets UI: four arrow
-buttons plus a reset button. The maze is rendered as an Image widget that
-gets refreshed on every step, so this works in every Jupyter front end
-(VS Code, classic Jupyter, JupyterLab) with no extra backend setup.
+`launch_game_window` forces the TkAgg matplotlib backend, opens a real OS
+window, and registers a key_press_event handler. It blocks until the player
+closes the window and returns the final PlayState.
+
+Holes and portals are optional; both default to empty. Stepping on a hole
+sets `dead`; stepping on the treasure sets `won`. Portals teleport once per
+move.
 """
 
 from dataclasses import dataclass, field, replace
 from typing import Any
 
-import matplotlib.pyplot as plt
-import ipywidgets as widgets
-from IPython.display import clear_output, display
-
 from animation import _harty_extent
-from environment import ACTIONS, next_state
+from environment import ACTIONS, apply_portal, next_state
 from maze_renderer import draw_maze
 from visualization import (
     load_harty_image,
     load_treasure_image,
+    overlay_holes,
     overlay_image_at_cell,
+    overlay_portals,
 )
 
 
@@ -32,23 +33,30 @@ class PlayState:
     facing: str
     treasure: tuple
     maze: Any = field(repr=False)
+    holes: tuple = ()
+    portals: tuple = ()
     steps_taken: int = 0
     won: bool = False
+    dead: bool = False
 
 
 def handle_key(state, action):
     """Pure step function: given a state and an action, return the next state.
 
-    Unknown actions and post-win key presses are no-ops. Walls block movement
-    but the facing is still updated, so Harty turns even when he cannot walk.
+    Unknown actions and post-terminal key presses are no-ops. Walls block
+    movement but the facing still updates, so Harty turns even when he cannot
+    walk. Portals teleport once per step. Stepping onto a hole sets `dead`;
+    stepping onto the treasure sets `won`.
     """
-    if state.won:
+    if state.won or state.dead:
         return state
     if action not in ACTIONS:
         return state
 
     new_position = next_state(state.position, action, state.maze)
+    new_position = apply_portal(new_position, state.portals)
     won = new_position == state.treasure
+    dead = new_position in tuple(state.holes)
 
     return replace(
         state,
@@ -56,6 +64,7 @@ def handle_key(state, action):
         facing=action,
         steps_taken=state.steps_taken + 1,
         won=won,
+        dead=dead,
     )
 
 
@@ -63,7 +72,7 @@ def is_won(state):
     return state.position == state.treasure
 
 
-def launch_game_window(maze, treasure, start, figsize=(7, 7)):
+def launch_game_window(maze, treasure, start, holes=(), portals=(), figsize=(7, 7)):
     """Open a real OS window where Harty is controlled by the arrow keys.
 
     Forces matplotlib to use the TkAgg backend (bundled with Python on
@@ -71,7 +80,7 @@ def launch_game_window(maze, treasure, start, figsize=(7, 7)):
     it. Returns the final PlayState.
 
     Call from a notebook cell or a standalone script:
-        state = launch_game_window(MAZE, TREASURE, HARTY)
+        state = launch_game_window(MAZE, TREASURE, HARTY, holes=HOLES, portals=PORTALS)
         print(state)
     """
     import matplotlib
@@ -85,6 +94,8 @@ def launch_game_window(maze, treasure, start, figsize=(7, 7)):
             facing='idle',
             treasure=treasure,
             maze=maze,
+            holes=tuple(holes),
+            portals=tuple(portals),
         )
     }
 
@@ -92,6 +103,8 @@ def launch_game_window(maze, treasure, start, figsize=(7, 7)):
     fig.canvas.manager.set_window_title('Harty Maze -- arrow keys to move, q to quit')
 
     draw_maze(ax, maze)
+    overlay_holes(ax, holes)
+    overlay_portals(ax, portals)
     overlay_image_at_cell(ax, load_treasure_image(), treasure)
     initial_image = load_harty_image('idle')
     harty_artist = ax.imshow(
@@ -107,6 +120,8 @@ def launch_game_window(maze, treasure, start, figsize=(7, 7)):
         harty_artist.set_extent(_harty_extent(new_state.position, img))
         if new_state.won:
             ax.set_title(f'You found the treasure in {new_state.steps_taken} steps! (close window to exit)')
+        elif new_state.dead:
+            ax.set_title(f'Game over -- fell in a hole after {new_state.steps_taken} steps. (close window to exit)')
         else:
             ax.set_title(f'Steps: {new_state.steps_taken}   (arrow keys to move)')
         fig.canvas.draw_idle()
@@ -125,97 +140,3 @@ def launch_game_window(maze, treasure, start, figsize=(7, 7)):
 
     plt.show(block=True)
     return state_ref['current']
-
-
-def _draw_frame(state, figsize=(5, 5)):
-    """Render the current frame and display it via IPython.display.
-
-    `display(fig)` + `plt.close(fig)` works reliably inside a widgets.Output
-    context in every front end (VS Code, Jupyter classic, JupyterLab) without
-    needing a special backend.
-    """
-    fig, ax = plt.subplots(figsize=figsize)
-    draw_maze(ax, state.maze)
-    overlay_image_at_cell(ax, load_treasure_image(), state.treasure)
-
-    harty_img = load_harty_image(state.facing)
-    ax.imshow(harty_img, extent=_harty_extent(state.position, harty_img), zorder=4)
-
-    if state.won:
-        ax.set_title(f'You found the treasure in {state.steps_taken} steps!')
-    else:
-        ax.set_title(f'Steps: {state.steps_taken}')
-
-    display(fig)
-    plt.close(fig)
-
-
-def launch_game(maze, treasure, start, figsize=(5, 5)):
-    """Open a clickable arrow-button game. Returns (ui_widget, get_state).
-
-    Display the widget by making it the last expression of the cell:
-        ui, get_state = launch_game(MAZE, TREASURE, HARTY)
-        ui
-    """
-    initial_state = PlayState(
-        position=start,
-        facing='idle',
-        treasure=treasure,
-        maze=maze,
-    )
-    state_ref = {'current': initial_state}
-
-    output = widgets.Output()
-
-    def refresh():
-        with output:
-            clear_output(wait=True)
-            _draw_frame(state_ref['current'], figsize=figsize)
-
-    refresh()  # initial draw
-
-    def make_button(symbol, action):
-        btn = widgets.Button(
-            description=symbol,
-            layout=widgets.Layout(width='50px', height='50px'),
-        )
-
-        def on_click(_b):
-            state_ref['current'] = handle_key(state_ref['current'], action)
-            refresh()
-
-        btn.on_click(on_click)
-        return btn
-
-    up_btn = make_button('↑', 'up')
-    down_btn = make_button('↓', 'down')
-    left_btn = make_button('←', 'left')
-    right_btn = make_button('→', 'right')
-
-    reset_btn = widgets.Button(
-        description='Reset',
-        layout=widgets.Layout(width='80px', height='30px'),
-    )
-
-    def on_reset(_b):
-        state_ref['current'] = replace(initial_state)
-        refresh()
-
-    reset_btn.on_click(on_reset)
-
-    spacer = widgets.Label('', layout=widgets.Layout(width='50px'))
-    arrow_grid = widgets.VBox([
-        widgets.HBox([spacer, up_btn, spacer]),
-        widgets.HBox([left_btn, down_btn, right_btn]),
-    ])
-
-    ui = widgets.VBox([
-        output,
-        arrow_grid,
-        reset_btn,
-    ])
-
-    def get_state():
-        return state_ref['current']
-
-    return ui, get_state

@@ -7,12 +7,14 @@ from play_mode import PlayState, handle_key, is_won
 TREASURE = (0, 4)
 
 
-def fresh_state(position=(9, 9)):
+def fresh_state(position=(9, 9), holes=(), portals=()):
     return PlayState(
         position=position,
         facing='idle',
         treasure=TREASURE,
         maze=DEFAULT_MAZE,
+        holes=tuple(holes),
+        portals=tuple(portals),
     )
 
 
@@ -63,3 +65,32 @@ def test_is_won_reflects_position():
     state = fresh_state(TREASURE)
     assert is_won(state)
     assert not is_won(fresh_state((5, 5)))
+
+
+def test_step_onto_hole_sets_dead():
+    # (0,0) code 0 allows 'down' to (1,0). Mark (1,0) as a hole.
+    state = fresh_state((0, 0), holes=[(1, 0)])
+    after = handle_key(state, 'down')
+    assert after.position == (1, 0)
+    assert after.dead
+    assert not after.won
+
+
+def test_no_op_after_dead():
+    state = fresh_state((0, 0), holes=[(1, 0)])
+    dead_state = handle_key(state, 'down')
+    assert dead_state.dead
+    again = handle_key(dead_state, 'right')
+    assert again == dead_state
+
+
+def test_portal_teleports_on_entry():
+    # (0,0) -> 'down' lands on (1,0). Portal pair (1,0) <-> (5,5) teleports
+    # Harty to (5,5).
+    portals = [((1, 0), (5, 5))]
+    state = fresh_state((0, 0), portals=portals)
+    after = handle_key(state, 'down')
+    assert after.position == (5, 5)
+    assert after.facing == 'down'
+    assert not after.won
+    assert not after.dead

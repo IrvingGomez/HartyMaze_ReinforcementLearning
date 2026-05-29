@@ -12,13 +12,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
-from environment import ACTIONS, next_state
+from environment import ACTIONS, apply_portal, is_terminal, next_state
 from maze_renderer import draw_maze
 from visualization import (
     load_harty_image,
     load_treasure_image,
+    overlay_holes,
     overlay_image_at_cell,
     overlay_policy_arrows,
+    overlay_portals,
     plot_value_heatmap,
 )
 
@@ -28,7 +30,8 @@ def uniform_random_action(position, rng):
     return rng.choice(ACTIONS)
 
 
-def simulate_path(policy, start, treasure, maze, max_steps=100, seed=None):
+def simulate_path(policy, start, treasure, maze, max_steps=100, seed=None,
+                  holes=(), portals=()):
     """Walk through the maze following `policy`.
 
     `policy` may be either
@@ -38,14 +41,15 @@ def simulate_path(policy, start, treasure, maze, max_steps=100, seed=None):
 
     Returns a list of (cell, facing) tuples. The first entry uses facing='idle'
     so the initial frame shows Harty standing still. Subsequent entries use the
-    action taken as the facing, so Harty turns even when bumping a wall.
+    action taken as the facing, so Harty turns even when bumping a wall. The
+    walk stops as soon as a terminal cell (treasure or hole) is reached.
     """
     rng = np.random.default_rng(seed)
     path = [(start, 'idle')]
     pos = start
 
     for _ in range(max_steps):
-        if pos == treasure:
+        if is_terminal(pos, treasure, holes):
             break
 
         action = policy(pos, rng) if callable(policy) else policy[pos]
@@ -53,6 +57,7 @@ def simulate_path(policy, start, treasure, maze, max_steps=100, seed=None):
             break
 
         new_pos = next_state(pos, action, maze)
+        new_pos = apply_portal(new_pos, portals)
         path.append((new_pos, action))
         pos = new_pos
 
@@ -81,6 +86,8 @@ def animate_path(
     treasure,
     maze,
     *,
+    holes=(),
+    portals=(),
     value=None,
     policy=None,
     cmap=None,
@@ -94,6 +101,7 @@ def animate_path(
 
     `value` (optional) colors the cells; if None, the background stays white.
     `policy` (optional) draws the arrows underneath.
+    `holes`, `portals` (optional) draw hazard and portal overlays.
     `interval` is the milliseconds-per-frame for playback.
     Returns the FuncAnimation; convert with `anim.to_jshtml()` for inline display.
     """
@@ -102,7 +110,9 @@ def animate_path(
         plot_value_heatmap(ax, value, cmap=cmap, vmin=vmin, vmax=vmax)
     draw_maze(ax, maze)
     if policy is not None:
-        overlay_policy_arrows(ax, policy, treasure=treasure)
+        overlay_policy_arrows(ax, policy, treasure=treasure, holes=holes)
+    overlay_holes(ax, holes)
+    overlay_portals(ax, portals)
     overlay_image_at_cell(ax, load_treasure_image(), treasure)
     if title:
         ax.set_title(title)
