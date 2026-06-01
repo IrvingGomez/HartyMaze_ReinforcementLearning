@@ -24,3 +24,6 @@ tests/_smoke_out/
 # OS junk
 .DS_Store
 Thumbs.db
+
+# Claude
+CLAUDE.md
