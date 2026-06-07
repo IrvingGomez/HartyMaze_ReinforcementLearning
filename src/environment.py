@@ -154,3 +154,40 @@ def step(position, action, treasure, maze, holes=(), portals=()):
     r = reward(new_position, treasure, holes)
     done = is_terminal(new_position, treasure, holes)
     return new_position, r, done
+
+
+def validate_setup(maze, treasure, harty, holes=(), portals=()):
+    """Check that maze, treasure, Harty, holes, and portals form a valid game.
+
+    Raises AssertionError with a message describing the first problem found.
+    """
+    assert maze.ndim == 2, 'MAZE must be a 2D array'
+    assert maze.dtype.kind in 'iu', 'MAZE values must be integers'
+    assert maze.min() >= 0 and maze.max() <= 15, 'wall codes must be in 0..15'
+
+    rows, cols = maze.shape
+
+    assert 0 <= treasure[0] < rows and 0 <= treasure[1] < cols, 'TREASURE outside grid'
+    assert 0 <= harty[0] < rows and 0 <= harty[1] < cols, 'HARTY outside grid'
+    assert treasure != harty, 'TREASURE and HARTY cannot share a cell'
+
+    assert int(maze[harty]) != ROCK_CODE, 'HARTY cannot stand on a rock cell (code 15)'
+    assert int(maze[treasure]) != ROCK_CODE, 'TREASURE cannot sit on a rock cell (code 15)'
+
+    assert len(portals) <= 2, 'at most two portal pairs are supported'
+    for pair in portals:
+        assert len(pair) == 2, 'each portal pair must have exactly two cells'
+
+    reserved = {treasure, harty, *holes}
+    for pair in portals:
+        for cell in pair:
+            assert 0 <= cell[0] < rows and 0 <= cell[1] < cols, f'portal cell {cell} outside grid'
+            assert cell not in reserved, f'portal cell {cell} clashes with treasure/Harty/hole'
+            assert int(maze[cell]) != ROCK_CODE, f'portal cell {cell} cannot be a rock (code 15)'
+            reserved.add(cell)
+
+    for hole in holes:
+        assert 0 <= hole[0] < rows and 0 <= hole[1] < cols, f'hole {hole} outside grid'
+        assert hole != treasure, 'hole cannot share a cell with the treasure'
+        assert hole != harty, 'hole cannot share a cell with Harty'
+        assert int(maze[hole]) != ROCK_CODE, f'hole {hole} cannot be a rock (code 15)'
