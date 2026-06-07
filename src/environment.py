@@ -48,7 +48,7 @@ BLOCKED_ACTIONS_BY_CODE = {
 }
 
 
-DEFAULT_MAZE = np.array([
+SMALL_MAZE = np.array([
     [0, 13, 2, 12, 11, 2, 11, 2, 0, 2],
     [14, 11, 8, 6, 2, 6, 13, 5, 9, 14],
     [6, 13, 1, 1, 5, 0, 13, 8, 0, 8],
