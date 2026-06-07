@@ -24,7 +24,10 @@ WALL_CODES = {
     12: {'top', 'left', 'right'},
     13: {'top', 'bottom'},
     14: {'left', 'right'},
+    15: {'top', 'right', 'bottom', 'left'},
 }
+
+ROCK_CODE = 15
 
 
 def cell_to_xy(cell):

@@ -13,16 +13,21 @@ cell is terminal (no bootstrap).
 
 import numpy as np
 
-from environment import ACTIONS, is_terminal, step
+from environment import ACTIONS, is_rock, is_terminal, step
+
+
+def _is_skip(cell, treasure, holes, maze):
+    """Cells with no value/policy: terminals (treasure + holes) and rocks."""
+    return is_terminal(cell, treasure, holes) or is_rock(cell, maze)
 
 
 def _random_deterministic_policy(maze, treasure, holes, rng):
-    """Random action at every non-terminal cell; blank string at every terminal."""
+    """Random action at every playable cell; blank at terminals and rocks."""
     rows, cols = maze.shape
     policy = np.empty((rows, cols), dtype=object)
     for r in range(rows):
         for c in range(cols):
-            if is_terminal((r, c), treasure, holes):
+            if _is_skip((r, c), treasure, holes, maze):
                 policy[r, c] = ''
             else:
                 policy[r, c] = rng.choice(ACTIONS)
@@ -57,7 +62,7 @@ def policy_evaluation(policy, treasure, gamma, maze, n_sweeps=100, tol=1e-6,
         q_new = np.zeros_like(q)
         for r in range(rows):
             for c in range(cols):
-                if is_terminal((r, c), treasure, holes):
+                if _is_skip((r, c), treasure, holes, maze):
                     continue
                 for a in ACTIONS:
                     q_new[r, c, _action_index(a)] = q_update(
@@ -74,12 +79,15 @@ def policy_evaluation(policy, treasure, gamma, maze, n_sweeps=100, tol=1e-6,
 def value_from_q(q_table, policy, treasure, maze, holes=()):
     """Collapse Q to state-value V by reading Q[s, policy(s)] at each cell.
 
-    Terminal cells (treasure + holes) keep V = 0.
+    Terminal cells (treasure + holes) and rocks keep V = NaN so plots mask them.
     """
     rows, cols = maze.shape
     v = np.zeros((rows, cols))
     for r in range(rows):
         for c in range(cols):
+            if is_rock((r, c), maze):
+                v[r, c] = np.nan
+                continue
             if is_terminal((r, c), treasure, holes):
                 continue
             v[r, c] = q_table[r, c, _action_index(policy[r, c])]
@@ -87,7 +95,7 @@ def value_from_q(q_table, policy, treasure, maze, holes=()):
 
 
 def greedy_policy(q_table, treasure, maze, rng=None, holes=()):
-    """Greedy policy from Q-table. Random tie-break, blank string at terminals."""
+    """Greedy policy from Q-table. Random tie-break, blank at terminals and rocks."""
     if rng is None:
         rng = np.random.default_rng()
 
@@ -96,7 +104,7 @@ def greedy_policy(q_table, treasure, maze, rng=None, holes=()):
 
     for r in range(rows):
         for c in range(cols):
-            if is_terminal((r, c), treasure, holes):
+            if _is_skip((r, c), treasure, holes, maze):
                 policy[r, c] = ''
                 continue
             row = q_table[r, c]
@@ -120,7 +128,7 @@ def uniform_random_policy_value(treasure, gamma, maze, n_sweeps=200, tol=1e-6,
         v_new = np.zeros_like(v)
         for r in range(rows):
             for c in range(cols):
-                if is_terminal((r, c), treasure, holes):
+                if _is_skip((r, c), treasure, holes, maze):
                     continue
                 total = 0.0
                 for a in ACTIONS:
@@ -136,6 +144,11 @@ def uniform_random_policy_value(treasure, gamma, maze, n_sweeps=200, tol=1e-6,
             v = v_new
             break
         v = v_new
+
+    for r in range(rows):
+        for c in range(cols):
+            if is_rock((r, c), maze):
+                v[r, c] = np.nan
 
     return v
 

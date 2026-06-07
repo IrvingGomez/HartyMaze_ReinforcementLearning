@@ -22,6 +22,7 @@ from visualization import (
     overlay_holes,
     overlay_image_at_cell,
     overlay_portals,
+    overlay_rocks,
 )
 
 
@@ -104,6 +105,7 @@ def launch_game_window(maze, treasure, start, holes=(), portals=(), figsize=(7, 
 
     draw_maze(ax, maze)
     overlay_holes(ax, holes)
+    overlay_rocks(ax, maze)
     overlay_portals(ax, portals)
     overlay_image_at_cell(ax, load_treasure_image(), treasure)
     initial_image = load_harty_image('idle')

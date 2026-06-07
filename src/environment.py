@@ -15,7 +15,7 @@ Two optional hazards extend the basic maze:
 
 import numpy as np
 
-from maze_renderer import WALL_CODES
+from maze_renderer import ROCK_CODE, WALL_CODES
 
 
 ACTIONS = ['up', 'down', 'left', 'right']
@@ -97,12 +97,18 @@ def apply_portal(position, portals):
     return position
 
 
+def is_rock(cell, maze):
+    """Rock cell (code 15) is impassable. Harty cannot stand on it."""
+    return int(maze[cell]) == ROCK_CODE
+
+
 def next_state(position, action, maze):
     """Return the cell reached by taking `action` from `position`.
 
     The action is blocked (agent stays put) if the current cell's wall code
-    forbids it, or if the move would leave the grid. Portals and hazards are
-    NOT applied here; see `step` for the full transition.
+    forbids it, the target cell is a rock, or the move would leave the grid.
+    Portals and hazards are NOT applied here; see `step` for the full
+    transition.
     """
     code = int(maze[position])
     if action in BLOCKED_ACTIONS_BY_CODE[code]:
@@ -114,6 +120,9 @@ def next_state(position, action, maze):
 
     rows, cols = maze.shape
     if not (0 <= next_row < rows and 0 <= next_col < cols):
+        return position
+
+    if is_rock((next_row, next_col), maze):
         return position
 
     return (next_row, next_col)

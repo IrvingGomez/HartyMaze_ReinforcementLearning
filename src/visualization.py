@@ -12,8 +12,8 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import matplotlib.image as mpimg
 
-from environment import ACTION_SYMBOLS, is_terminal
-from maze_renderer import draw_maze
+from environment import ACTION_SYMBOLS, is_rock, is_terminal
+from maze_renderer import ROCK_CODE, draw_maze
 
 
 IMAGES_DIR = Path(__file__).resolve().parent.parent / 'images'
@@ -27,6 +27,7 @@ HARTY_IMAGE_PATHS = {
     'right': IMAGES_DIR / 'Harty_right.png',
 }
 HOLE_IMAGE_PATH = IMAGES_DIR / 'Dead.png'
+ROCK_IMAGE_PATH = IMAGES_DIR / 'Rock.png'
 PORTAL_IMAGE_PATHS = [
     IMAGES_DIR / 'Portal1.png',
     IMAGES_DIR / 'Portal2.png',
@@ -42,9 +43,11 @@ def make_value_colormap():
     """
     low = plt.cm.RdBu(np.linspace(0.0, 0.5, 128))      # red -> white
     high = plt.cm.PuOr(np.linspace(0.5, 1.0, 128))     # white -> purple
-    return mcolors.LinearSegmentedColormap.from_list(
+    cmap = mcolors.LinearSegmentedColormap.from_list(
         'value_cmap', np.vstack((low, high))
     )
+    cmap.set_bad('white')                              # NaN cells (rocks) stay blank
+    return cmap
 
 
 def plot_value_heatmap(ax, value, cmap=None, vmin=-1.0, vmax=1.0):
@@ -63,13 +66,15 @@ def plot_value_heatmap(ax, value, cmap=None, vmin=-1.0, vmax=1.0):
     )
 
 
-def overlay_policy_arrows(ax, policy, treasure=None, holes=(),
+def overlay_policy_arrows(ax, policy, treasure=None, holes=(), maze=None,
                           fontsize=18, color='black'):
-    """Write the action arrow at the center of each cell, skipping terminals."""
+    """Write the action arrow at the center of each cell, skipping terminals and rocks."""
     rows, cols = policy.shape
     for r in range(rows):
         for c in range(cols):
             if treasure is not None and is_terminal((r, c), treasure, holes):
+                continue
+            if maze is not None and is_rock((r, c), maze):
                 continue
             symbol = ACTION_SYMBOLS.get(policy[r, c], '')
             if symbol:
@@ -123,6 +128,10 @@ def load_hole_image():
     return mpimg.imread(HOLE_IMAGE_PATH)
 
 
+def load_rock_image():
+    return mpimg.imread(ROCK_IMAGE_PATH)
+
+
 def load_portal_image(pair_index):
     return mpimg.imread(PORTAL_IMAGE_PATHS[pair_index])
 
@@ -134,6 +143,16 @@ def overlay_holes(ax, holes):
     img = load_hole_image()
     for cell in holes:
         overlay_image_at_cell(ax, img, cell)
+
+
+def overlay_rocks(ax, maze):
+    """Stamp Rock.png on every cell whose wall code is ROCK_CODE (15)."""
+    rock_cells = np.argwhere(maze == ROCK_CODE)
+    if rock_cells.size == 0:
+        return
+    img = load_rock_image()
+    for r, c in rock_cells:
+        overlay_image_at_cell(ax, img, (int(r), int(c)))
 
 
 def overlay_portals(ax, portals):
@@ -165,8 +184,9 @@ def plot_policy_and_value(
 
     plot_value_heatmap(ax, value, cmap=cmap, vmin=vmin, vmax=vmax)
     draw_maze(ax, maze)
-    overlay_policy_arrows(ax, policy, treasure=treasure, holes=holes)
+    overlay_policy_arrows(ax, policy, treasure=treasure, holes=holes, maze=maze)
     overlay_holes(ax, holes)
+    overlay_rocks(ax, maze)
     overlay_portals(ax, portals)
     overlay_image_at_cell(ax, load_treasure_image(), treasure)
     overlay_image_at_cell(ax, load_harty_image(facing=harty_facing), harty)
@@ -200,6 +220,7 @@ def plot_value_only(
     plot_value_heatmap(ax, value, cmap=cmap, vmin=vmin, vmax=vmax)
     draw_maze(ax, maze)
     overlay_holes(ax, holes)
+    overlay_rocks(ax, maze)
     overlay_portals(ax, portals)
     overlay_image_at_cell(ax, load_treasure_image(), treasure)
     overlay_image_at_cell(ax, load_harty_image(facing=harty_facing), harty)
