@@ -27,6 +27,7 @@
       --top-row: 96px;           /* height of the speech bubble row (fixed, so the maze never jumps when Hearty talks) */
       --art: 94px;               /* size of a piece on the shelf */
       --board-inset: 7%;         /* set from the script so the bubble lines up with the maze */
+      --map-size: 196px;         /* Hearty's plan map in the side panel */
     }
 
     * { box-sizing: border-box; }
@@ -611,21 +612,64 @@
     .runner-body { transform-box: fill-box; transform-origin: 50% 70%; }
     .trail { color: var(--ink); opacity: 0.3; }
 
-    /* The three parts of a run, in order. */
-    .phases { display: grid; gap: 8px; margin: 0 0 16px; padding: 0; list-style: none; }
-    .phases li { display: flex; align-items: center; gap: 10px; color: var(--chalk-dim); font-size: 0.95rem; font-weight: 600; }
+    /* The three parts of a run, in order: a row of numbered circles. */
+    .phases { display: flex; align-items: center; gap: 6px; margin: 0 0 12px; padding: 0; list-style: none; }
+    .phases li { display: flex; align-items: center; gap: 6px; color: var(--chalk-dim); font-size: 0.82rem; font-weight: 600; white-space: nowrap; }
+    .phases li + li::before {
+      content: "";
+      width: 16px;
+      height: 2px;
+      margin-right: 2px;
+      background: repeating-linear-gradient(90deg, var(--chalk-dim) 0 4px, transparent 4px 7px);
+    }
     .phase-mark {
-      flex: 0 0 28px;
+      flex: 0 0 24px;
       display: grid;
       place-items: center;
-      height: 28px;
+      height: 24px;
       border: 2.5px dashed var(--chalk-dim);
       border-radius: 50%;
-      font: 800 0.85rem var(--font-display);
+      font: 800 0.75rem var(--font-display);
     }
     .phases li.is-now { color: var(--chalk); }
     .phases li.is-now .phase-mark { border: 2.5px solid var(--ink); background: var(--sun); color: var(--ink); }
     .phases li.is-done .phase-mark { border: 2.5px solid var(--ink); background: var(--go); color: #fff; }
+
+    /* ===== Hearty's plan: the small map in the side panel ===== */
+    .plan-view { display: flex; align-items: center; gap: 14px; }
+    .plan-map { flex: 0 0 var(--map-size); width: var(--map-size); height: var(--map-size); overflow: visible; touch-action: manipulation; }
+    .map-tint { fill: #f0efec; transition: fill 600ms ease; }
+    .map-cell.is-picked .map-tint { stroke: var(--sun); stroke-width: 4; }
+    .map-grid { stroke: rgba(29, 26, 59, 0.14); stroke-width: 1; }
+    .map-wall { stroke: var(--ink); stroke-width: 4; stroke-linecap: round; }
+    .map-border { fill: none; stroke: var(--ink); stroke-width: 5; }
+    .map-portal { fill: none; stroke-width: 3; }
+    /* Arrows turn the short way round when the plan changes. Each arrow sits in a group
+       centered on its square, so it turns around the middle of that square. */
+    .map-arrow {
+      color: var(--ink);
+      transform-origin: 0 0;
+      transition: transform 550ms cubic-bezier(0.3, 1.4, 0.5, 1), opacity 300ms;
+    }
+    .map-arrow.is-changed { color: var(--hearty); }
+    .plan-map.no-plan .map-arrow { opacity: 0; }
+    .map-hearty { transition: transform 160ms ease-out; pointer-events: none; }
+    .map-hearty circle { fill: var(--hearty); stroke: var(--ink); stroke-width: 2.5; }
+
+    .plan-legend { display: grid; gap: 10px; color: var(--chalk-dim); font-size: 0.78rem; line-height: 1.25; }
+    .legend-row { display: flex; align-items: center; gap: 6px; }
+    .legend-row svg { flex: none; width: 18px; height: 18px; color: var(--chalk); }
+    .legend-scale { display: grid; grid-template-columns: 12px 1fr; gap: 8px; height: 92px; }
+    /* The score colors, from +1 (the treasure) at the top to -1 (a hole) at the bottom. */
+    .scale-bar {
+      border: 2px solid var(--ink);
+      border-radius: 3px;
+      background: linear-gradient(#2a78d6, #9ec5f4, #f0efec, #f5aca3, #e34948);
+    }
+    .scale-labels { display: flex; flex-direction: column; justify-content: space-between; }
+    .plan-caption { min-height: 2.6em; margin: 8px 0 10px; color: var(--chalk); font-size: 0.86rem; line-height: 1.3; }
+
+    .fx-reach { fill: #ffffff; stroke: var(--sun); stroke-width: 4; }
 
     .attempt-now { margin-bottom: 12px; }
     .attempt-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
@@ -636,7 +680,7 @@
     .moves-bar span { display: block; width: 0; height: 100%; background: var(--sun); transition: width 120ms linear; }
     .moves-bar.is-late span { background: var(--hearty); }
 
-    .attempt-log { max-height: 210px; margin: 0; padding: 0; overflow-y: auto; list-style: none; }
+    .attempt-log { max-height: 136px; margin: 0; padding: 0; overflow-y: auto; list-style: none; }
     .attempt-log li {
       display: grid;
       grid-template-columns: 24px 1fr auto;
@@ -726,8 +770,10 @@
       .token-name { margin-top: 16px; }
       .tool-hint { margin-top: 10px; }
       .actions { margin-top: 8px; }
-      .phases { gap: 4px; margin-bottom: 10px; }
-      .attempt-log { max-height: 150px; }
+      :root { --map-size: 150px; }
+      .phases { margin-bottom: 8px; }
+      .plan-caption { margin: 6px 0 8px; }
+      .attempt-log { max-height: 76px; }
     }
 
     /* ===== Tablets held upright, and phones: everything in one column ===== */
@@ -899,11 +945,24 @@
 
       <!-- Shown instead of the shelves while Hearty runs. -->
       <section class="run-panel" aria-label="Watching Hearty learn">
-        <h2><span>Watching Hearty learn</span><span class="rule"></span></h2>
+        <h2><span>Hearty's plan</span><span class="rule"></span></h2>
+        <!-- The plan as Hearty sees it: his move in every square, on a color for its score. -->
+        <div class="plan-view">
+          <svg id="plan-map" class="plan-map" role="img" aria-label="Hearty's plan"></svg>
+          <div class="plan-legend">
+            <div class="legend-row"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#plan-arrow"></use></svg><span>My move in each square</span></div>
+            <div>Score</div>
+            <div class="legend-scale" aria-hidden="true">
+              <span class="scale-bar"></span>
+              <span class="scale-labels"><span>+1 treasure</span><span>0</span><span>&minus;1 hole</span></span>
+            </div>
+          </div>
+        </div>
+        <p id="plan-caption" class="plan-caption" aria-live="polite"></p>
         <ol class="phases">
-          <li data-phase="random"><span class="phase-mark">1</span><span>Wander at random</span></li>
-          <li data-phase="learn"><span class="phase-mark">2</span><span id="learn-label">Make a plan, then improve it</span></li>
-          <li data-phase="best"><span class="phase-mark">3</span><span>Follow the best plan</span></li>
+          <li data-phase="random"><span class="phase-mark">1</span><span>Wander</span></li>
+          <li data-phase="learn"><span class="phase-mark">2</span><span id="learn-label">Learn</span></li>
+          <li data-phase="best"><span class="phase-mark">3</span><span>Best plan</span></li>
         </ol>
         <div class="attempt-now">
           <div class="attempt-head"><strong id="attempt-name"></strong><span id="attempt-moves"></span></div>
@@ -1064,6 +1123,8 @@
     const attemptLog = document.querySelector("#attempt-log");
     const speedButtons = [...document.querySelectorAll(".speed")];
     const backButton = document.querySelector("#back-to-building");
+    const planMap = document.querySelector("#plan-map");
+    const planCaption = document.querySelector("#plan-caption");
 
     // =====================================================================
     // SMALL HELPERS
@@ -2148,6 +2209,9 @@
       if (findCell("treasure") === null) return "Now hide the treasure somewhere for me to find.";
       const waiting = waitingPortalPair();
       if (waiting !== -1) return `Portal ${waiting + 1} needs a partner. Drag in another portal.`;
+      const blocked = whyRunIsBlocked();
+      if (blocked !== null && blocked.kind === "no-path") return "I can't reach the treasure! Make a way through.";
+      if (blocked !== null && blocked.kind === "too-far") return "The treasure is too far away for one try.";
       if (walls.size === 0) return "Add walls to make it tricky, or press Run!";
       return "Looking good! Press Run to watch me learn.";
     }
@@ -2408,6 +2472,27 @@
       return { moves, outcome };
     }
 
+    // THE CHECK BEFORE RUNNING: can Hearty get from his square to the treasure at all?
+    // This explores every square he could reach, with the same move rules as the engine
+    // (walls block, portals send him on, and the treasure and holes end the attempt).
+    // It gives back each square he can reach, with the fewest moves it takes to get there.
+    function exploreFromStart(maze) {
+      const fewestMoves = new Map([[maze.start, 0]]);
+      const toVisit = [maze.start];
+      while (toVisit.length > 0) {
+        const cell = toVisit.shift();
+        if (isEnd(maze, cell)) continue;
+        for (const action of ACTIONS) {
+          const next = maze.steps[cell][action].next;
+          if (!fewestMoves.has(next)) {
+            fewestMoves.set(next, fewestMoves.get(cell) + 1);
+            toVisit.push(next);
+          }
+        }
+      }
+      return fewestMoves;
+    }
+
     function randomMove(random) {
       return ACTIONS[Math.floor(random() * ACTIONS.length)];
     }
@@ -2478,9 +2563,10 @@
 
     // The whole learning loop (policy_iteration in the notebook): start with a random plan,
     // then score it and improve it, round after round, until the plan stops changing.
-    // Every round is kept, so the story (and Stage 4's arrows) can show it step by step.
+    // Every round is kept, so the story and the plan map can show it step by step.
     function learn(maze, random) {
-      let plan = randomPlan(maze, random);
+      const firstPlan = randomPlan(maze, random);
+      let plan = firstPlan;
       const rounds = [];
       for (let number = 1; number <= MAX_LEARNING_ROUNDS; number += 1) {
         const scores = scorePlan(maze, plan);
@@ -2490,7 +2576,7 @@
         plan = better;
         if (changedCells.length === 0) break;
       }
-      return rounds;
+      return { firstPlan, rounds };
     }
 
     // A random number maker that can be "seeded": the same seed always gives the same numbers.
@@ -2544,20 +2630,33 @@
       return movement;
     }
 
-    // Why Run can't start yet, or null when it can.
-    // Stage 4 will add the full check, including whether there is a path to the treasure at all.
+    // Why Run can't start yet, or null when it can. Checked every time the maze changes,
+    // so the Run button and Hearty's bubble always say what is missing.
+    // Gives back { kind, message } and, when there is no way through, the squares Hearty can reach.
     function whyRunIsBlocked() {
-      if (findCell("hearty") === null) return "Put me in the maze first, then press Run.";
-      if (findCell("treasure") === null) return "Hide the treasure first, then press Run.";
+      if (findCell("hearty") === null) return { kind: "no-hearty", message: "Put me in the maze first, then press Run." };
+      if (findCell("treasure") === null) return { kind: "no-treasure", message: "Hide the treasure first, then press Run." };
       const waiting = waitingPortalPair();
-      if (waiting !== -1) return `Portal ${waiting + 1} needs a partner before I can run.`;
+      if (waiting !== -1) return { kind: "lonely-portal", message: `Portal ${waiting + 1} needs a partner before I can run.` };
+      const maze = snapshotMaze();
+      const fewestMoves = exploreFromStart(maze);
+      if (!fewestMoves.has(maze.treasure)) {
+        return { kind: "no-path", message: "Walls or holes block every way to the treasure. I can only reach the glowing squares.", reachable: [...fewestMoves.keys()] };
+      }
+      // ASSUMPTION: a treasure further away than one attempt's moves counts as out of reach too,
+      // because every attempt would be cut off before Hearty could get there.
+      const moves = fewestMoves.get(maze.treasure);
+      if (moves > MAX_MOVES_PER_ATTEMPT) {
+        return { kind: "too-far", message: `The treasure is ${moves} moves away, but each try stops after ${MAX_MOVES_PER_ATTEMPT}.` };
+      }
       return null;
     }
 
     function startRun() {
       const problem = whyRunIsBlocked();
       if (problem !== null) {
-        note(problem, true);
+        note(problem.message, true);
+        if (problem.reachable) glowReachable(problem.reachable);
         return;
       }
       if (run !== null) leaveRun();          // "Again" starts a fresh run
@@ -2566,13 +2665,14 @@
       run = thisRun;
       attemptLog.replaceChildren();
       setPhase("random");
-      learnLabel.textContent = "Make a plan, then improve it";
+      learnLabel.textContent = "Learn";
       showAttempt("Getting ready", 0);
       runSay = "Here I go!";
       note("");
       refresh();
       thisRun.runner = makeRunner();
       standAt(thisRun.runner, thisRun.maze.start);
+      drawPlanMap(thisRun.maze);
       tellStory(thisRun).catch((problem) => {
         if (problem instanceof RunStopped) return;    // the student pressed Stop: nothing went wrong
         // Anything else is a bug. Unlock the board so the student isn't stuck, and report it.
@@ -2603,9 +2703,10 @@
     async function tellStory(thisRun) {
       const { maze, random } = thisRun;
 
-      // Part 1: wander at random.
+      // Part 1: wander at random. There is no plan yet, so the plan map has no arrows.
       setPhase("random");
       heartySays("First I'll wander around at random, with no plan.");
+      showPlanCaption("No plan yet. I'm moving at random.");
       await wait(thisRun, 1400);
       for (let number = 1; number <= RANDOM_ATTEMPTS; number += 1) {
         note(`Random try ${number} of ${RANDOM_ATTEMPTS}.`);
@@ -2622,27 +2723,45 @@
 
       // Part 2: make a plan, then score it and improve it, round after round.
       setPhase("learn");
-      heartySays("Wandering is hopeless. Time to make a plan!");
-      note("I start with a random move for every square.");
-      await wait(thisRun, 1800);
-      const rounds = learn(maze, random);
+      const { firstPlan, rounds } = learn(maze, random);
       thisRun.rounds = rounds;
+      heartySays("Wandering is hopeless. Time to make a plan!");
+      note("My plan is on the right: one arrow for every square.");
+      showPlan(firstPlan, []);
+      showPlanCaption("Plan 0: a random move in every square.");
+      await wait(thisRun, 2400);
+
       const lastChange = rounds.filter((round) => round.changed > 0).pop();
+      let planBeingScored = firstPlan;
       let lastRoute = null;
       let lastRoutePlan = 0;
       for (const round of rounds) {
         setPhase("learn", round.number);
+        showRound(round.number);
+
+        // Learning step 1: score the plan. The colors show each square's score.
+        heartySays(`Round ${round.number}: first I score my plan.`);
+        note(round.number === 1 ? "Blue squares lead to the treasure. Red ones lead into a hole." : "");
+        showScores(round.scores, planBeingScored);
+        showPlanCaption(`Scores for plan ${round.number - 1}.`);
+        await wait(thisRun, 1700);
+
         if (round.changed === 0) {
-          heartySays(`Round ${round.number}: nothing changed, so this plan is my best.`);
-          note("");
-          await wait(thisRun, 1800);
+          heartySays("Every square already has its best move. My plan is done!");
+          showPlan(round.plan, []);
+          showPlanCaption("My best plan. Tap a square to see its score.");
+          await wait(thisRun, 2000);
           break;
         }
-        showRound(round.number);
-        heartySays(`Round ${round.number}: I score my plan, then improve it.`);
-        note(`The glowing square${round.changed === 1 ? "" : "s"} changed: ${round.changed}.`);
+
+        // Learning step 2: improve it. Squares switch to the move with the best score.
+        heartySays(`Then I switch ${round.changed} square${round.changed === 1 ? "" : "s"} to a better move.`);
+        note("Each arrow turns toward the best-scoring move.");
+        showPlan(round.plan, round.changedCells);
         glowSquares(round.changedCells);
-        await wait(thisRun, 1700);
+        showPlanCaption(`Plan ${round.number}: the orange arrows just changed.`);
+        planBeingScored = round.plan;
+        await wait(thisRun, 1900);
         if (round === lastChange) continue;  // the best plan gets walked in part 3
 
         const attempt = simulateAttempt(maze, (cell) => round.plan[cell]);
@@ -2671,8 +2790,10 @@
       setPhase("best");
       heartySays("Here's my best plan. Watch my paw prints!");
       note("");
-      await wait(thisRun, 1300);
       const bestPlan = rounds[rounds.length - 1].plan;
+      showPlan(bestPlan, []);
+      showPlanCaption("My best plan. Tap a square to see its score.");
+      await wait(thisRun, 1300);
       const attempt = simulateAttempt(maze, (cell) => bestPlan[cell]);
       await playAttempt(thisRun, attempt, "Best plan", true, true);
       logAttempt("Best plan", attempt, null, true);
@@ -2741,9 +2862,11 @@
         await bump(thisRun, step.from, step.action, time);
       } else {
         if (leaveTrail) pawPrint(runner.trail, step.from, step.action);
+        movePlanDot(step.portalFrom ?? step.next);
         await hop(thisRun, step.from, step.portalFrom ?? step.next, time);
       }
       if (step.portalFrom !== null) await teleport(thisRun, step.portalFrom, step.next, time);
+      movePlanDot(step.next);
     }
 
     // A little hop from one square to the next.
@@ -2787,6 +2910,7 @@
       runner.body.getAnimations().forEach((movement) => movement.cancel());
       face(runner, null);
       standAt(runner, maze.start);
+      movePlanDot(maze.start);
       await act(thisRun, runner.body, [{ transform: "scale(0)" }, { transform: "scale(1.15)", offset: 0.7 }, { transform: "scale(1)" }], 320, { easing: "ease-out" });
     }
 
@@ -2858,6 +2982,146 @@
       }
     }
 
+    // ---------- Hearty's plan: the small map in the side panel ----------
+
+    const MAP_CELL = 40;                 // size of one square on the plan map, in its own units
+    const ANGLES = { up: 0, right: 90, down: 180, left: 270 };
+    // Score colors: gray means 0, blue leads toward the treasure (+1), red leads into a hole (-1).
+    // Each side gets steadily darker, so the color shows how good or how bad a square is.
+    const SCORE_COLORS_GOOD = ["#f0efec", "#cde2fb", "#9ec5f4", "#5598e7", "#2a78d6"];
+    const SCORE_COLORS_BAD = ["#f0efec", "#fbd9d4", "#f5aca3", "#ec7a70", "#e34948"];
+    let planSquares = new Map();         // square -> { tint, arrow, angle, move, score }
+    let planDot = null;
+
+    // Draw the plan map once at the start of a run: squares, walls, the treasure, holes and portals.
+    // The arrows and colors are then changed in place, so they can turn and fade smoothly.
+    function drawPlanMap(maze) {
+      planMap.replaceChildren();
+      const size = GRID_SIZE * MAP_CELL;
+      planMap.setAttribute("viewBox", `-3 -3 ${size + 6} ${size + 6}`);
+      planMap.classList.add("no-plan");
+      planSquares = new Map();
+      for (const cell of maze.cells) {
+        const { row, column } = readKey(cell);
+        const x = column * MAP_CELL;
+        const y = row * MAP_CELL;
+        const group = addSvg("g", { class: "map-cell", "data-cell": cell }, planMap);
+        const tint = addSvg("rect", { x, y, width: MAP_CELL, height: MAP_CELL, class: "map-tint" }, group);
+        let arrow = null;
+        if (cell === maze.treasure) {
+          addSvg("use", { href: "#piece-treasure", x, y, width: MAP_CELL, height: MAP_CELL }, group);
+        } else if (maze.holes.has(cell)) {
+          addSvg("use", { href: "#piece-hole", x, y, width: MAP_CELL, height: MAP_CELL }, group);
+        } else {
+          if (maze.portalColors.has(cell)) {
+            addSvg("circle", { cx: x + MAP_CELL / 2, cy: y + MAP_CELL / 2, r: 16, class: "map-portal", stroke: maze.portalColors.get(cell) }, group);
+          }
+          const middle = addSvg("g", { transform: `translate(${x + MAP_CELL / 2} ${y + MAP_CELL / 2})` }, group);
+          arrow = addSvg("g", { class: "map-arrow" }, middle);
+          addSvg("use", { href: "#plan-arrow", x: -11, y: -11, width: 22, height: 22 }, arrow);
+        }
+        planSquares.set(cell, { tint, arrow, angle: 0, move: null, score: 0 });
+      }
+      for (let index = 1; index < GRID_SIZE; index += 1) {
+        addSvg("line", { x1: index * MAP_CELL, y1: 0, x2: index * MAP_CELL, y2: size, class: "map-grid" }, planMap);
+        addSvg("line", { x1: 0, y1: index * MAP_CELL, x2: size, y2: index * MAP_CELL, class: "map-grid" }, planMap);
+      }
+      // The same walls as the board, shrunk down to the map.
+      const toMap = (value) => (value - MARGIN) / CELL * MAP_CELL;
+      for (const key of maze.walls) {
+        const line = lineForWall(key);
+        addSvg("line", { x1: toMap(line.x1), y1: toMap(line.y1), x2: toMap(line.x2), y2: toMap(line.y2), class: "map-wall" }, planMap);
+      }
+      addSvg("rect", { x: 0, y: 0, width: size, height: size, rx: 3, class: "map-border" }, planMap);
+      planDot = addSvg("g", { class: "map-hearty" }, planMap);
+      addSvg("circle", { cx: 0, cy: 0, r: 8 }, planDot);
+      movePlanDot(maze.start);
+    }
+
+    // Point every arrow at the plan's move. Arrows in "changed" are colored orange.
+    function showPlan(plan, changed) {
+      planMap.classList.remove("no-plan");
+      for (const [cell, square] of planSquares) {
+        if (square.arrow === null) continue;
+        // Turn the short way round (a quarter turn, not three quarters).
+        const turn = ((ANGLES[plan[cell]] - square.angle) % 360 + 540) % 360 - 180;
+        square.angle += turn;
+        square.move = plan[cell];
+        square.arrow.style.transform = `rotate(${square.angle}deg)`;
+        square.arrow.classList.toggle("is-changed", changed.includes(cell));
+      }
+    }
+
+    // Color every square by its score under the plan being scored.
+    function showScores(scores, plan) {
+      for (const [cell, square] of planSquares) {
+        if (square.arrow === null) continue;     // the treasure and holes keep their own picture
+        square.score = scores[cell][plan[cell]];
+        square.tint.style.fill = scoreColor(square.score);
+      }
+    }
+
+    function scoreColor(score) {
+      const colors = score >= 0 ? SCORE_COLORS_GOOD : SCORE_COLORS_BAD;
+      const position = Math.min(1, Math.abs(score)) * (colors.length - 1);
+      const low = Math.floor(position);
+      const high = Math.min(colors.length - 1, low + 1);
+      return mixColors(colors[low], colors[high], position - low);
+    }
+
+    // Blend two colors written like "#2a78d6". amount 0 gives the first, 1 gives the second.
+    function mixColors(first, second, amount) {
+      const channels = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+      const a = channels(first);
+      const b = channels(second);
+      const mixed = a.map((value, i) => Math.round(value + (b[i] - value) * amount));
+      return `rgb(${mixed.join(", ")})`;
+    }
+
+    function movePlanDot(cell) {
+      if (planDot === null) return;
+      const { row, column } = readKey(cell);
+      planDot.style.transform = `translate(${(column + 0.5) * MAP_CELL}px, ${(row + 0.5) * MAP_CELL}px)`;
+    }
+
+    function showPlanCaption(text) {
+      planCaption.textContent = text;
+    }
+
+    // Tap (or point at) a square on the plan map to read its score and move.
+    function explainSquare(event) {
+      const group = event.target.closest(".map-cell");
+      if (group === null || run === null) return;
+      planMap.querySelectorAll(".map-cell.is-picked").forEach((picked) => picked.classList.remove("is-picked"));
+      group.classList.add("is-picked");
+      const cell = group.dataset.cell;
+      const square = planSquares.get(cell);
+      if (cell === run.maze.treasure) {
+        showPlanCaption(`${squareName(cell)}: the treasure (+1).`);
+      } else if (run.maze.holes.has(cell)) {
+        showPlanCaption(`${squareName(cell)}: a hole (\u22121).`);
+      } else if (square.move === null) {
+        showPlanCaption(`${squareName(cell)}: no plan yet.`);
+      } else {
+        showPlanCaption(`${squareName(cell)}: score ${square.score.toFixed(2)}, move ${square.move}.`);
+      }
+    }
+
+    planMap.addEventListener("click", explainSquare);
+    planMap.addEventListener("pointermove", (event) => {
+      if (event.pointerType === "mouse") explainSquare(event);
+    });
+
+    // When there is no way to the treasure, the squares Hearty can reach glow for a moment.
+    function glowReachable(cells) {
+      for (const cell of cells) {
+        const { row, column } = readKey(cell);
+        playOnce("rect", { x: MARGIN + column * CELL + 6, y: MARGIN + row * CELL + 6, width: CELL - 12, height: CELL - 12, rx: 14, class: "fx fx-reach" }, [
+          { opacity: 0 }, { opacity: 0.55, offset: 0.2 }, { opacity: 0.55, offset: 0.7 }, { opacity: 0 }
+        ], { duration: 2600 });
+      }
+    }
+
     // ---------- The run panel on the right ----------
 
     function setPhase(name, roundNumber = null) {
@@ -2867,7 +3131,7 @@
         item.classList.toggle("is-done", index < now);
         item.querySelector(".phase-mark").textContent = index < now ? "✓" : String(index + 1);
       });
-      if (roundNumber !== null) learnLabel.textContent = `Make a plan, then improve it (round ${roundNumber})`;
+      if (roundNumber !== null) learnLabel.textContent = `Round ${roundNumber}`;
     }
 
     function showRound(number) {
@@ -3054,6 +3318,11 @@
       <symbol id="log-same" viewBox="0 0 24 24" overflow="visible">
         <circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="3 3"/>
         <path d="M8 10h8M8 14h8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+      </symbol>
+
+      <!-- An arrow for the plan map, pointing up (it gets turned to the plan's move). -->
+      <symbol id="plan-arrow" viewBox="0 0 24 24" overflow="visible">
+        <path d="M12 2.5 21 12h-5.5v9.5h-7V12H3z" fill="currentColor" stroke="#1d1a3b" stroke-width="1.5" stroke-linejoin="round"/>
       </symbol>
 
       <!-- Icons for the Run button: run, stop, and run again. -->
