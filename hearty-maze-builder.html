@@ -2,291 +2,1498 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Hearty's Maze Builder</title>
   <style>
+    /* ===== Colors and fonts used everywhere ===== */
     :root {
-      --ink: #21352c;
-      --muted: #5a6c62;
-      --paper: #fbf8ef;
-      --board: #fffdf7;
-      --green: #27765a;
-      --green-dark: #1a513e;
-      --yellow: #f3c84b;
-      --line: #c9d4c8;
-      --wall: #283a30;
-      --focus: #d66a3a;
+      --ink: #1d1a3b;            /* walls, outlines, text on light things */
+      --slate: #24394a;          /* the chalkboard behind everything */
+      --slate-deep: #16252f;     /* shadows on the chalkboard */
+      --chalk: #f2f0e6;          /* chalk writing */
+      --chalk-dim: #9fb3bf;      /* faint chalk */
+      --floor: #e8f3d8;          /* maze floor */
+      --floor-alt: #d9eac3;      /* every other square, so squares are easy to count */
+      --paper: #fffef8;          /* Hearty's speech bubble */
+      --muted: #5f5b85;          /* small text inside the bubble */
+      --hearty: #f2661c;         /* Hearty's jacket: "this is what you are doing now" */
+      --sun: #ffc93c;            /* glowing dots, badges, keyboard focus */
+      --go: #2a9d5c;             /* you can drop here */
+      --stop: #e0484e;           /* you can't drop here / remove */
+      --wood: #c98d55;           /* the shelves the pieces stand on */
+      --wood-dark: #93592c;
+      --font-display: ui-rounded, "Arial Rounded MT Bold", "Nunito", "Segoe UI", system-ui, sans-serif;
+      --font-body: "Avenir Next", Avenir, "Segoe UI", "Helvetica Neue", system-ui, sans-serif;
+      --top-row: 96px;           /* height of the speech bubble row (fixed, so the maze never jumps when Hearty talks) */
+      --art: 94px;               /* size of a piece on the shelf */
+      --board-inset: 7%;         /* set from the script so the bubble lines up with the maze */
     }
 
     * { box-sizing: border-box; }
 
+    html, body { margin: 0; }
+
     body {
-      margin: 0;
       min-height: 100vh;
-      color: var(--ink);
-      background-color: var(--paper);
-      background-image: radial-gradient(#dfddcf 0.7px, transparent 0.7px);
-      background-size: 18px 18px;
-      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      color: var(--chalk);
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.4;
+      /* A chalkboard: slate with faint chalk dust and a couple of old eraser smudges. */
+      background-color: var(--slate);
+      background-image:
+        radial-gradient(ellipse 45% 35% at 12% 18%, rgba(255, 255, 255, 0.045), transparent 70%),
+        radial-gradient(ellipse 40% 30% at 86% 82%, rgba(255, 255, 255, 0.035), transparent 70%),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0.09 0 0 0 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E");
+      /* Stop long presses from selecting text or opening menus on tablets. */
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
     }
 
-    main {
-      width: min(100% - 32px, 820px);
+    body.is-dragging, body.is-dragging * { cursor: grabbing !important; }
+
+    /* ===== Page layout: maze on the left, tools on the right ===== */
+    .app {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 340px;
+      grid-template-rows: var(--top-row) auto;
+      grid-template-areas:
+        "stage brand"
+        "stage tools";
+      column-gap: 40px;
+      row-gap: 14px;
+      align-items: start;
+      max-width: 1320px;
       margin: 0 auto;
-      padding: 28px 0 36px;
+      padding: 20px 28px;
     }
 
-    .topline {
+    .stage {
+      grid-area: stage;
+      justify-self: center;
+      /* The maze is as big as the screen height allows. */
+      width: min(100%, max(360px, calc(100vh - 148px)));
+      width: min(100%, max(360px, calc(100dvh - 148px)));
+    }
+
+    /* ===== Title, written on the board ===== */
+    .brand {
+      grid-area: brand;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      height: var(--top-row);
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: 2.15rem;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -0.01em;
+      transform: rotate(-2deg);
+      transform-origin: left center;
+      animation: wiggle-in 700ms cubic-bezier(0.3, 1.4, 0.5, 1) 80ms backwards;
+    }
+
+    .swoosh { display: block; width: 200px; height: 14px; margin: 2px 0 0 2px; overflow: visible; }
+    .swoosh path {
+      fill: none;
+      stroke: var(--hearty);
+      stroke-width: 5;
+      stroke-linecap: round;
+      stroke-dasharray: 220;
+      animation: draw-line 600ms ease-out 450ms backwards;
+    }
+
+    .brand p { margin: 4px 0 0; color: var(--chalk-dim); font-size: 0.92rem; }
+
+    /* ===== Hearty and the speech bubble ===== */
+    .coach {
       display: flex;
       align-items: center;
-      gap: 10px;
-      margin-bottom: 8px;
-      color: var(--green-dark);
-      font-size: 0.82rem;
-      font-weight: 800;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
+      gap: 14px;
+      height: var(--top-row);
+      margin: 0 0 10px var(--board-inset);
+      animation: rise-in 500ms ease-out 150ms backwards;
     }
 
-    .spark {
-      width: 12px;
-      height: 12px;
-      flex: 0 0 auto;
+    .coach-face {
+      flex: 0 0 70px;
+      height: 70px;
+      border: 3px solid var(--ink);
       border-radius: 50%;
-      background: var(--yellow);
-      box-shadow: 0 0 0 4px #f3c84b44;
+      background: var(--hearty);
+      box-shadow: 0 5px 0 var(--slate-deep);
+      overflow: hidden;
     }
 
-    h1 {
+    .coach-face svg { display: block; width: 100%; height: 100%; }
+
+    .coach-bubble {
+      position: relative;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+      min-height: 66px;
+      padding: 8px 10px 8px 20px;
+      border: 3px solid var(--ink);
+      /* Uneven corners make the bubble look drawn by hand, like in a comic. */
+      border-radius: 34px 22px 30px 18px / 24px 32px 20px 30px;
+      background: var(--paper);
+      color: var(--ink);
+      box-shadow: 0 5px 0 var(--slate-deep);
+    }
+
+    /* The bubble's tail, pointing at Hearty. */
+    .coach-bubble::before {
+      content: "";
+      position: absolute;
+      left: -13px;
+      top: 54%;
+      width: 18px;
+      height: 16px;
+      border-left: 3px solid var(--ink);
+      border-bottom: 3px solid var(--ink);
+      border-bottom-left-radius: 6px;
+      background: var(--paper);
+      transform: translateY(-50%) skewY(-28deg) rotate(36deg);
+    }
+
+    .coach-text { flex: 1; min-width: 0; }
+
+    .coach-say {
       margin: 0;
-      font-family: Georgia, "Times New Roman", serif;
-      font-size: clamp(2rem, 8vw, 3.4rem);
-      line-height: 1.05;
-      letter-spacing: 0;
+      font-family: var(--font-display);
+      font-size: clamp(1rem, 0.6rem + 0.8vw, 1.15rem);
+      font-weight: 700;
+      line-height: 1.25;
     }
 
-    .intro {
-      margin: 12px 0 22px;
-      max-width: 600px;
-      color: var(--muted);
-      font-size: 1.08rem;
-      line-height: 1.5;
-    }
+    .coach-note { margin: 2px 0 0; min-height: 1.3em; color: var(--muted); font-size: clamp(0.82rem, 0.55rem + 0.5vw, 0.9rem); line-height: 1.3; }
+    .coach-note.is-warning { color: #b8323a; font-weight: 600; }
 
-    .workbench {
+    /* Cancel and Remove stack in the bubble's corner so Hearty's words keep their room. */
+    .coach-actions { display: flex; flex-direction: column; align-items: flex-end; }
+    .coach-actions .text-btn { min-height: 36px; padding: 2px 8px; }
+    .coach-actions .text-btn::after { left: 8px; right: 8px; bottom: 6px; }
+
+    /* Undo is a round button beside the bubble, close to the maze it changes. */
+    .undo {
+      flex: 0 0 64px;
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 230px;
-      align-items: start;
-      gap: 24px;
+      place-items: center;
+      align-content: center;
+      width: 64px;
+      height: 64px;
+      padding: 0;
+      border: 3px solid var(--ink);
+      border-radius: 50%;
+      background: var(--paper);
+      color: var(--ink);
+      box-shadow: 0 5px 0 var(--slate-deep);
+      font: 700 0.72rem var(--font-body);
+      cursor: pointer;
+      touch-action: manipulation;
     }
 
+    .undo svg { width: 24px; height: 24px; }
+    .undo:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 2px 0 var(--slate-deep); }
+    .undo:disabled { opacity: 0.4; cursor: default; }
+    .undo:focus-visible { outline: 4px solid var(--sun); outline-offset: 3px; }
+
+    /* Plain text buttons, used inside the bubble and under the tools. */
+    .text-btn {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 44px;
+      padding: 4px 10px;
+      border: 0;
+      background: none;
+      color: inherit;
+      font: 700 0.92rem var(--font-body);
+      cursor: pointer;
+      touch-action: manipulation;
+      white-space: nowrap;
+    }
+
+    /* A chalky underline that stretches out when you point at the button. */
+    .text-btn::after {
+      content: "";
+      position: absolute;
+      left: 10px;
+      right: 10px;
+      bottom: 7px;
+      height: 3px;
+      border-radius: 2px;
+      background: currentColor;
+      opacity: 0.22;
+      transition: opacity 180ms;
+    }
+
+    .text-btn:hover::after, .text-btn:focus-visible::after { opacity: 0.7; }
+    .text-btn:focus-visible { outline: none; }
+    .text-btn:disabled { opacity: 0.35; cursor: default; }
+    .text-btn:disabled::after { display: none; }
+    .text-btn svg { width: 20px; height: 20px; flex: 0 0 20px; }
+    .text-btn[hidden] { display: none; }
+    .text-btn.is-danger { color: #c22f36; }
+
+    /* ===== The maze board ===== */
     .board-wrap {
-      width: 100%;
-      padding: 12px;
-      border: 2px solid var(--ink);
-      border-radius: 8px;
-      background: var(--board);
-      box-shadow: 5px 5px 0 var(--yellow);
+      position: relative;
+      animation: rise-in 550ms cubic-bezier(0.2, 0.9, 0.3, 1.15) backwards;
     }
 
-    svg {
+    .board, .effects {
       display: block;
       width: 100%;
       height: auto;
       overflow: visible;
-      touch-action: manipulation;
-      user-select: none;
     }
 
-    .outer-border {
+    .board { touch-action: none; outline: none; }   /* fingers drag pieces instead of scrolling the page */
+    .effects { position: absolute; inset: 0; pointer-events: none; }
+
+    .floor-shadow { fill: var(--slate-deep); }
+    /* The floor is one big rectangle, with every other square painted lighter on top. */
+    .floor { fill: var(--floor-alt); }
+    .square-a { fill: var(--floor); }
+    .square-b { fill: transparent; }
+    .border { fill: none; stroke: var(--ink); stroke-width: 12; }
+
+    /* Letters along the top and numbers down the side, so you can say "put a hole on C3". */
+    .coord {
+      fill: var(--chalk-dim);
+      font-family: var(--font-display);
+      font-size: 21px;
+      font-weight: 700;
+      text-anchor: middle;
+      dominant-baseline: central;
+      pointer-events: none;
+    }
+
+    .cell { outline: none; }
+    .cell-target { fill: transparent; stroke: transparent; stroke-width: 3; }
+
+    /* While a piece is picked up, empty squares get a marching dashed outline. */
+    .board.is-placing .cell.is-open .cell-target {
+      stroke: var(--ink);
+      stroke-opacity: 0.28;
+      stroke-dasharray: 8 8;
+      animation: march 1s linear var(--phase, 0s) infinite;
+    }
+
+    .board.is-placing .cell.is-open { cursor: pointer; }
+    .cell:focus-visible .cell-target { stroke: var(--sun); stroke-opacity: 1; stroke-width: 6; stroke-dasharray: none; }
+
+    .wall { cursor: pointer; outline: none; }
+    .wall-line { stroke: var(--ink); stroke-width: 12; stroke-linecap: round; }
+    .wall.is-new .wall-line { stroke-dasharray: 100; animation: wall-draw 300ms ease-out; }
+    .wall:focus-visible .wall-line { stroke: var(--sun); }
+    .hit-line { stroke: transparent; stroke-width: 30; stroke-linecap: round; }
+    @media (hover: hover) { .wall:hover .wall-line { stroke: var(--stop); } }
+
+    .option { cursor: pointer; }
+    .option-line { stroke: var(--hearty); stroke-width: 7; stroke-dasharray: 0.1 14; stroke-linecap: round; }
+    .option.is-removal .option-line { stroke: var(--stop); }
+
+    .dot { cursor: pointer; outline: none; }
+    .dot-hit { fill: transparent; }
+    .dot-mark { fill: #fff; stroke: var(--ink); stroke-width: 3.5; transform-box: fill-box; transform-origin: center; }
+    .dot.is-neighbor .dot-mark { fill: var(--sun); animation: pop-in 260ms cubic-bezier(0.3, 1.6, 0.5, 1) backwards; }
+    .dot.is-selected .dot-mark { fill: var(--hearty); }
+    .dot:focus-visible .dot-mark { stroke: var(--sun); stroke-width: 7; }
+    @media (hover: hover) { .dot:hover .dot-mark { fill: var(--sun); } }
+    .dot-halo {
       fill: none;
-      stroke: var(--wall);
-      stroke-width: 10;
-      stroke-linecap: square;
-      pointer-events: none;
-    }
-
-    .grid-guide {
-      stroke: var(--line);
-      stroke-width: 2;
-      stroke-dasharray: 3 8;
-      pointer-events: none;
-    }
-
-    .wall-hit-area {
-      stroke: transparent;
-      stroke-width: 30;
-      stroke-linecap: round;
-      cursor: pointer;
-      pointer-events: stroke;
-    }
-
-    .wall-visible {
-      stroke: var(--wall);
-      stroke-width: 10;
-      stroke-linecap: round;
-      pointer-events: none;
-    }
-
-    .dot-hit-area {
-      fill: transparent;
-      cursor: pointer;
-    }
-
-    .dot {
-      fill: var(--green);
-      stroke: var(--board);
+      stroke: var(--hearty);
       stroke-width: 4;
+      opacity: 0.5;
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: halo 1.2s ease-in-out var(--phase, 0s) infinite;
       pointer-events: none;
     }
 
-    .dot-group { outline: none; }
-    .dot-group:focus .dot-hit-area { stroke: var(--focus); stroke-width: 4; }
-    .dot-group.selected .dot { fill: var(--focus); }
+    /* Walls and dots are switched off while a piece is picked up, so a tap always places it. */
+    .board.is-placing .wall,
+    .board.is-placing .dot,
+    .board.is-placing .option { pointer-events: none; }
+    .board.is-placing .dot-mark { opacity: 0.4; }
 
-    .instructions {
-      padding-top: 5px;
+    .piece { cursor: grab; outline: none; }
+    .piece-hit { fill: transparent; stroke: transparent; stroke-width: 5; }
+    .piece:focus-visible .piece-hit { stroke: var(--sun); stroke-dasharray: 8 6; }
+    .piece-shadow { fill: var(--ink); opacity: 0.2; transform-box: fill-box; transform-origin: center; }
+    .piece.is-lifted { opacity: 0.25; }
+    .piece-ring { fill: none; stroke-width: 4; stroke-dasharray: 7 7; pointer-events: none; }
+    .piece-ring.is-held { stroke: var(--hearty); }
+    .piece-ring.is-waiting {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: spin 6s linear var(--phase, 0s) infinite;
+    }
+    .pair-badge { stroke: var(--ink); stroke-width: 3; }
+    .pair-number {
+      fill: #fff;
+      font-family: var(--font-body);
+      font-size: 15px;
+      font-weight: 800;
+      text-anchor: middle;
+      dominant-baseline: central;
+      pointer-events: none;
     }
 
-    .step {
+    /* Kept faint so it never gets mistaken for a wall or a path. */
+    .portal-link {
+      fill: none;
+      stroke-width: 5;
+      stroke-dasharray: 0.1 12;
+      stroke-linecap: round;
+      opacity: 0.45;
+      pointer-events: none;
+    }
+
+    .drop-marker { fill: rgba(42, 157, 92, 0.18); stroke: var(--go); stroke-width: 5; pointer-events: none; }
+    .drop-marker.is-blocked { fill: rgba(224, 72, 78, 0.16); stroke: var(--stop); }
+    .wall-rubber { stroke: var(--hearty); stroke-width: 8; stroke-dasharray: 0.1 14; stroke-linecap: round; pointer-events: none; }
+
+    /* ===== Little movements on the board ===== */
+    /* A piece landing: Hearty and the treasure drop and squash; holes get dug; portals spin open. */
+    .piece.is-new .piece-body { animation: land 460ms cubic-bezier(0.3, 0.6, 0.4, 1); }
+    .piece.is-new .piece-shadow { animation: shadow-land 460ms cubic-bezier(0.3, 0.6, 0.4, 1); }
+    .piece.type-hole.is-new .piece-body { animation: dig 420ms cubic-bezier(0.3, 1.4, 0.5, 1); }
+    .piece.type-portal.is-new .piece-body { animation: open-portal 560ms cubic-bezier(0.3, 1.3, 0.5, 1); }
+
+    /* Always-on movements: Hearty breathes, the treasure twinkles, portals swirl.
+       "--phase" keeps them smooth when the board is redrawn. */
+    .board .art-hearty { animation: breathe 2.4s ease-in-out var(--phase, 0s) infinite; }
+    .board .art-sparkle { animation: twinkle 3s ease-in-out var(--phase, 0s) infinite; }
+    .board .art-swirl { animation: swirl 4s linear var(--phase, 0s) infinite; }
+    .no-idle .board .art-hearty,
+    .no-idle .board .art-sparkle,
+    .no-idle .board .art-swirl { animation: none; }
+
+    .fx { transform-box: fill-box; transform-origin: center; pointer-events: none; }
+    .fx-dust { fill: #fff; }
+    .fx-dirt { fill: #8a6a48; stroke: var(--ink); stroke-width: 2; }
+    .fx-cloud { fill: #fff; stroke: var(--ink); stroke-width: 2.5; }
+    .fx-chunk { fill: var(--ink); }
+
+    /* ===== Tools on the right ===== */
+    .tools { grid-area: tools; }
+
+    .tool-section + .tool-section { margin-top: 18px; }
+
+    .tools h2 {
       display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      margin-bottom: 17px;
-      color: var(--muted);
-      font-size: 0.98rem;
-      line-height: 1.45;
+      align-items: center;
+      gap: 12px;
+      margin: 0 0 12px;
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      font-weight: 800;
+      animation: rise-in 400ms ease-out 250ms backwards;
     }
 
-    .step-number {
+    /* A dashed chalk line after each heading. */
+    .tools h2 .rule {
+      flex: 1;
+      height: 3px;
+      border-radius: 2px;
+      background: repeating-linear-gradient(90deg, var(--chalk-dim) 0 12px, transparent 12px 20px);
+      opacity: 0.45;
+    }
+
+    .tools h2 small { color: var(--chalk-dim); font-family: var(--font-body); font-size: 0.85rem; font-weight: 600; }
+
+    .shelves { display: grid; gap: 14px; }
+
+    /* A shelf is a row of pieces standing on a wooden plank. */
+    .shelf {
+      position: relative;
       display: grid;
-      width: 28px;
-      height: 28px;
-      flex: 0 0 28px;
-      place-items: center;
-      border-radius: 50%;
-      color: var(--ink);
-      background: var(--yellow);
-      font-weight: 800;
+      grid-template-columns: 1fr 1fr;
+      padding: 0 6px;
     }
 
-    .count {
-      margin: 24px 0 16px;
-      padding-top: 15px;
-      border-top: 1px solid var(--line);
-      color: var(--ink);
-      font-size: 1rem;
-      font-weight: 800;
+    .shelf::before {
+      content: "";
+      position: absolute;
+      top: calc(var(--art) * 0.88);
+      left: 0;
+      right: 0;
+      height: 13px;
+      border: 2.5px solid var(--ink);
+      border-radius: 3px 3px 6px 6px;
+      background: linear-gradient(var(--wood) 55%, var(--wood-dark));
+      box-shadow: 0 6px 0 rgba(8, 16, 24, 0.35);
     }
 
-    .count span { color: var(--green-dark); }
-
-    button {
-      min-height: 48px;
-      padding: 10px 14px;
-      border: 2px solid var(--green-dark);
-      border-radius: 6px;
-      color: white;
-      background: var(--green-dark);
+    .token {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 0 4px;
+      border: 0;
+      background: none;
+      color: var(--chalk);
       font: inherit;
-      font-size: 0.98rem;
+      cursor: grab;
+      touch-action: none;
+    }
+
+    .token-art {
+      display: block;
+      width: var(--art);
+      height: var(--art);
+      transform-origin: 50% 90%;
+      transition: transform 200ms cubic-bezier(0.3, 1.5, 0.5, 1);
+      animation: drop-in 560ms cubic-bezier(0.3, 1.3, 0.5, 1) calc(320ms + var(--i, 0) * 90ms) backwards;
+    }
+
+    .token-art svg { display: block; width: 100%; height: 100%; overflow: visible; }
+    .token[data-type="treasure"] .token-art svg { transform: translateY(7px); }
+
+    .token-name { margin-top: 20px; font-weight: 700; font-size: 1rem; line-height: 1.2; }
+    .token-info { color: var(--chalk-dim); font-size: 0.8rem; line-height: 1.25; }
+    .token-info.is-urgent { color: #ffb38a; font-weight: 700; }
+
+    @media (hover: hover) { .token:hover .token-art { transform: translateY(-5px) rotate(-4deg); } }
+    .token:active .token-art { transform: translateY(-9px) scale(1.06); }
+    .token:focus-visible { outline: none; }
+    .token:focus-visible .token-art { outline: 3px dashed var(--sun); outline-offset: 4px; border-radius: 50%; }
+
+    /* Picked up by tapping: the piece floats above its shelf until you tap a square. */
+    .token.is-held .token-art { animation: float 1.4s ease-in-out infinite; }
+    .token.is-held .token-name { color: var(--sun); }
+
+    /* Hearty or the treasure is already in the maze: only a faded outline stays on the shelf. */
+    .token.is-out .token-art svg { opacity: 0.3; filter: grayscale(1); }
+    .token[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
+
+    /* A round sticker on the corner: a tick, or how many are in the maze. */
+    .token-badge {
+      position: absolute;
+      top: -6px;
+      left: calc(50% + var(--art) / 2 - 20px);
+      z-index: 2;
+      display: grid;
+      place-items: center;
+      min-width: 28px;
+      height: 28px;
+      padding: 0 7px;
+      border: 2.5px solid var(--ink);
+      border-radius: 14px;
+      background: var(--sun);
+      color: var(--ink);
+      font-size: 0.8rem;
       font-weight: 800;
-      cursor: pointer;
-      touch-action: manipulation;
+      transform: rotate(8deg);
     }
 
-    button:hover { background: var(--green); }
-    button:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+    .token-badge[hidden] { display: none; }
+    .token-badge.is-done { background: var(--go); color: #fff; }
 
-    .message {
-      min-height: 48px;
-      margin: 12px 0 0;
-      color: var(--muted);
-      font-size: 0.9rem;
-      line-height: 1.4;
+    /* The chalk arrow that shows a first-time student where Hearty goes. */
+    .start-arrow {
+      position: absolute;
+      top: -4px;
+      right: calc(50% + var(--art) / 2 + 4px);
+      width: 120px;
+      height: 80px;
+      overflow: visible;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 200ms;
     }
 
-    @media (max-width: 650px) {
-      main { width: min(100% - 24px, 500px); padding-top: 22px; }
-      .workbench { grid-template-columns: 1fr; gap: 22px; }
-      .board-wrap { padding: 8px; }
-      .instructions { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
-      .count, button, .message { grid-column: 1 / -1; }
-      .count { margin-top: 7px; }
+    .start-arrow path { fill: none; stroke: var(--chalk); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+    /* It fades in after Hearty has landed on the shelf, then keeps nudging toward the maze. */
+    .show-start-arrow:not(.is-dragging) .start-arrow { opacity: 0.85; animation: arrow-in 400ms ease-out 900ms backwards, nudge 1.6s ease-in-out 1.3s infinite; }
+
+    .tool-hint { margin: 14px 0 0; color: var(--chalk-dim); font-size: 0.86rem; line-height: 1.35; }
+
+    .wall-help { display: flex; align-items: center; gap: 12px; }
+    .wall-help svg { flex: 0 0 110px; width: 110px; height: 60px; overflow: visible; color: var(--chalk); }
+    .wall-help p { margin: 0; color: var(--chalk-dim); font-size: 0.86rem; line-height: 1.35; }
+    .wall-help strong { color: var(--chalk); }
+
+    .actions { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 14px 0 0 -10px; }
+    .actions .text-btn { color: var(--chalk); }
+
+    /* ===== The piece that follows your finger while dragging ===== */
+    .ghost {
+      position: fixed;
+      left: 0;
+      top: 0;
+      z-index: 10;
+      pointer-events: none;
+      /* --tilt makes the piece swing a little in the direction you move it. */
+      transform: translate(-50%, -62%) rotate(var(--tilt, 0deg)) scale(1.12);
+      transition: transform 140ms ease-out;
+      filter: drop-shadow(0 14px 8px rgba(8, 14, 24, 0.4));
     }
 
-    @media (prefers-reduced-motion: no-preference) {
-      main { animation: arrive 350ms ease-out both; }
-      @keyframes arrive {
-        from { opacity: 0; transform: translateY(8px); }
-        to { opacity: 1; transform: translateY(0); }
+    .ghost svg { display: block; width: 100%; height: 100%; overflow: visible; animation: pick-up 180ms ease-out; }
+
+    .ghost-label {
+      position: absolute;
+      left: 50%;
+      bottom: -14px;
+      padding: 2px 10px;
+      border: 2px solid var(--ink);
+      border-radius: 10px;
+      background: var(--stop);
+      color: #fff;
+      font-size: 0.8rem;
+      font-weight: 800;
+      transform: translateX(-50%);
+      opacity: 0;
+    }
+
+    .ghost.is-removing svg { opacity: 0.55; }
+    .ghost.is-removing .ghost-label { opacity: 1; }
+
+    .sprites { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+    /* ===== Movement definitions ===== */
+    @keyframes land {
+      0% { transform: translateY(-36px) scale(0.92, 1.08); }
+      55% { transform: translateY(0) scale(1.15, 0.84); }
+      76% { transform: translateY(-5px) scale(0.96, 1.05); }
+      100% { transform: none; }
+    }
+    @keyframes shadow-land { 0% { transform: scale(0.4); opacity: 0.05; } 55% { transform: scale(1.15); } 100% { transform: none; } }
+    @keyframes dig { 0% { transform: scale(0, 0.2); } 100% { transform: none; } }
+    @keyframes open-portal { 0% { transform: scale(0) rotate(-220deg); } 100% { transform: none; } }
+    @keyframes breathe { 0%, 100% { transform: none; } 50% { transform: scale(0.985, 1.035); } }
+    @keyframes twinkle {
+      0%, 60%, 100% { transform: scale(0.85) rotate(0deg); }
+      72% { transform: scale(1.45) rotate(45deg); }
+      84% { transform: scale(0.95) rotate(90deg); }
+    }
+    @keyframes swirl { to { transform: rotate(-360deg); } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes march { to { stroke-dashoffset: -16; } }
+    @keyframes halo { 50% { transform: scale(1.25); opacity: 0.2; } }
+    @keyframes pop-in { from { transform: scale(0.3); } }
+    @keyframes wall-draw { from { stroke-dashoffset: 100; stroke: var(--hearty); } 70% { stroke: var(--hearty); } to { stroke-dashoffset: 0; } }
+    @keyframes float { 0%, 100% { transform: translateY(-8px) rotate(-2deg); } 50% { transform: translateY(-16px) rotate(2deg); } }
+    @keyframes nudge { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-8px, 5px); } }
+    @keyframes pick-up { from { transform: scale(0.75); } }
+    @keyframes arrow-in { from { opacity: 0; } }
+    @keyframes draw-line { from { stroke-dashoffset: 220; } to { stroke-dashoffset: 0; } }
+    @keyframes rise-in { from { opacity: 0; transform: translateY(14px); } }
+    @keyframes drop-in {
+      0% { opacity: 0; transform: translateY(-46px) rotate(-10deg); }
+      55% { opacity: 1; transform: translateY(4px) rotate(4deg) scale(1.05, 0.92); }
+      100% { transform: none; }
+    }
+    @keyframes wiggle-in {
+      0% { opacity: 0; transform: rotate(-9deg) scale(0.88); }
+      60% { opacity: 1; transform: rotate(1deg) scale(1.04); }
+      100% { transform: rotate(-2deg); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
+
+    /* ===== Short landscape screens (small tablets, laptops): a more compact shelf ===== */
+    @media (min-width: 901px) and (max-height: 780px) {
+      :root { --art: 78px; }
+      .tool-section + .tool-section { margin-top: 12px; }
+      .shelves { gap: 8px; }
+      .token-name { margin-top: 16px; }
+      .tool-hint { margin-top: 10px; }
+      .actions { margin-top: 8px; }
+    }
+
+    /* ===== Tablets held upright, and phones: everything in one column ===== */
+    @media (max-width: 900px) {
+      .app {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto auto auto;
+        grid-template-areas: "brand" "stage" "tools";
+        row-gap: 12px;
+        padding: 16px;
       }
+
+      .brand { height: auto; align-items: center; text-align: center; }
+      .brand h1 { font-size: 1.8rem; transform-origin: center; }
+      .swoosh { width: 170px; margin-inline: auto; }
+
+      .stage {
+        width: min(100%, max(300px, calc(100vh - 430px)));
+        width: min(100%, max(300px, calc(100dvh - 430px)));
+      }
+
+      .tools { justify-self: center; width: min(100%, 720px); }
+      .shelves { grid-template-columns: 1fr 1fr; gap: 0 24px; }
+
+      /* The board is above the shelves here, so the chalk arrow points up. */
+      .start-arrow {
+        top: auto;
+        bottom: calc(100% - 6px);
+        right: auto;
+        left: calc(50% - 20px);
+        width: 90px;
+        height: 60px;
+        transform-origin: left bottom;
+        rotate: 75deg;
+      }
+    }
+
+    @media (max-width: 520px) {
+      :root { --top-row: 136px; --art: 80px; }
+      .app { padding: 12px; }
+      .coach { gap: 10px; margin-inline: 0; }
+      .coach-face { flex-basis: 46px; height: 46px; }
+      .coach-bubble { flex-wrap: wrap; align-content: center; padding-left: 14px; }
+      .coach-actions { flex-direction: row; width: 100%; justify-content: flex-end; }
+      .coach-say { font-size: 1rem; }
+      .shelves { grid-template-columns: 1fr; gap: 14px; }
+      /* On a phone, Undo shrinks to just its arrow to leave room for Hearty's words. */
+      .undo { flex-basis: 48px; width: 48px; height: 48px; font-size: 0; }
+      .undo svg { width: 22px; height: 22px; }
     }
   </style>
 </head>
 <body>
-  <main>
-    <div class="topline"><span class="spark" aria-hidden="true"></span>Maze workshop · Stage 1</div>
-    <h1>Hearty's Maze</h1>
-    <p class="intro">Build the paths by adding walls between neighboring dots. The outside edge is already closed in.</p>
+  <div class="app">
+    <header class="brand">
+      <h1>Hearty's Maze</h1>
+      <svg class="swoosh" viewBox="0 0 200 14" aria-hidden="true"><path d="M3 10 C 48 2, 120 1, 197 7" filter="url(#chalk)"/></svg>
+      <p>Build the maze Hearty will learn to solve.</p>
+    </header>
 
-    <section class="workbench" aria-label="Maze builder">
-      <div class="board-wrap">
-        <svg id="maze" role="group" aria-label="Maze grid. Choose two neighboring dots to add a wall, or choose a wall to remove it."></svg>
+    <main class="stage">
+      <!-- Hearty explains what to do next, and what just happened. -->
+      <div class="coach">
+        <div id="coach-face" class="coach-face" aria-hidden="true">
+          <svg viewBox="8 4 130 130"><use href="#hearty-picture"></use></svg>
+        </div>
+        <div id="coach-bubble" class="coach-bubble">
+          <div class="coach-text" aria-live="polite">
+            <p id="coach-say" class="coach-say"></p>
+            <p id="coach-note" class="coach-note"></p>
+          </div>
+          <div class="coach-actions">
+            <button id="coach-remove" class="text-btn is-danger" type="button" hidden>Remove</button>
+            <button id="coach-cancel" class="text-btn" type="button" hidden>Cancel</button>
+          </div>
+        </div>
+        <button id="undo" class="undo" type="button" aria-label="Undo">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Undo
+        </button>
       </div>
 
-      <aside class="instructions" aria-label="How to build">
-        <div class="step"><span class="step-number">1</span><span>Choose a dot to start a wall.</span></div>
-        <div class="step"><span class="step-number">2</span><span>Choose a neighboring dot to draw the wall.</span></div>
-        <div class="step"><span class="step-number">3</span><span>Tap a wall to remove it again.</span></div>
-        <p class="count" aria-live="polite">Walls added: <span id="wall-count">0</span></p>
-        <button id="clear-walls" type="button">Clear all walls</button>
-        <p id="message" class="message" aria-live="polite">Choose any dot to begin.</p>
-      </aside>
-    </section>
-  </main>
+      <!-- The script draws the maze in the first picture. The second one, on top,
+           is only for little effects like dust and sparkles. -->
+      <div class="board-wrap">
+        <svg id="board" class="board" role="group" aria-label="Maze"></svg>
+        <svg id="effects" class="effects" aria-hidden="true"></svg>
+      </div>
+    </main>
+
+    <aside class="tools" aria-label="Tools">
+      <section class="tool-section">
+        <h2><span>Pieces</span><span class="rule"></span></h2>
+        <div class="shelves">
+          <div class="shelf">
+            <button class="token" type="button" data-type="hearty" style="--i: 0">
+              <span class="token-art"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#piece-hearty"></use></svg></span>
+              <span class="token-badge" hidden></span>
+              <span class="token-name">Hearty</span>
+              <span class="token-info">Starts here</span>
+              <svg class="start-arrow" viewBox="0 0 120 80" aria-hidden="true">
+                <g filter="url(#chalk)"><path d="M114 26 C 88 4, 42 8, 18 50"/><path d="M8 34 L 17 53 L 37 45"/></g>
+              </svg>
+            </button>
+            <button class="token" type="button" data-type="treasure" style="--i: 1">
+              <span class="token-art"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#piece-treasure"></use><use href="#treasure-sparkle"></use></svg></span>
+              <span class="token-badge" hidden></span>
+              <span class="token-name">Treasure</span>
+              <span class="token-info">The goal</span>
+            </button>
+          </div>
+          <div class="shelf">
+            <button class="token" type="button" data-type="hole" style="--i: 2">
+              <span class="token-art"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#piece-hole"></use></svg></span>
+              <span class="token-badge" hidden></span>
+              <span class="token-name">Hole</span>
+              <span class="token-info">Ends the attempt</span>
+            </button>
+            <button class="token" type="button" data-type="portal" style="--i: 3">
+              <span class="token-art"><svg viewBox="0 0 100 100" aria-hidden="true" style="color: #2f7cf6"><use href="#piece-portal"></use><use href="#portal-swirl"></use></svg></span>
+              <span class="token-badge" hidden></span>
+              <span class="token-name">Portal</span>
+              <span class="token-info">Comes in pairs</span>
+            </button>
+          </div>
+        </div>
+        <p class="tool-hint">Drag a piece onto a square, or tap it and then tap a square. Drag it off the board to put it back.</p>
+      </section>
+
+      <section class="tool-section">
+        <h2><span>Walls</span><span class="rule"></span><small id="wall-count">None yet</small></h2>
+        <div class="wall-help">
+          <!-- A chalk drawing: tap dot 1, then dot 2, and a wall appears between them. -->
+          <svg viewBox="0 0 110 60" aria-hidden="true">
+            <g filter="url(#chalk)" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 46 H 74" stroke-width="8"/>
+              <circle cx="18" cy="46" r="6.5" stroke-width="3.5"/>
+              <circle cx="74" cy="46" r="6.5" stroke-width="3.5"/>
+              <circle cx="100" cy="46" r="5" stroke-width="3" opacity="0.4"/>
+              <path d="M28 22 Q 46 8, 64 22" stroke-width="3"/>
+              <path d="M55 21 L 65 23 L 64 13" stroke-width="3"/>
+            </g>
+            <text x="16" y="29" fill="currentColor" font-family="ui-rounded, 'Arial Rounded MT Bold', sans-serif" font-size="17" font-weight="800" text-anchor="middle">1</text>
+            <text x="76" y="29" fill="currentColor" font-family="ui-rounded, 'Arial Rounded MT Bold', sans-serif" font-size="17" font-weight="800" text-anchor="middle">2</text>
+          </svg>
+          <p><strong>Tap a dot, then the dot beside it</strong>, or drag along the dots. Tap a wall to knock it down.</p>
+        </div>
+      </section>
+
+      <div class="actions">
+        <button id="clear-walls" class="text-btn" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 14.5 13 6l6 6-8.5 8.5H7l-2.5-2.5a1.4 1.4 0 0 1 0-2z M9 10l6 6 M12.5 20.5H20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Clear walls
+        </button>
+        <button id="clear-pieces" class="text-btn" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 14.5 13 6l6 6-8.5 8.5H7l-2.5-2.5a1.4 1.4 0 0 1 0-2z M9 10l6 6 M12.5 20.5H20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Clear pieces
+        </button>
+      </div>
+    </aside>
+  </div>
 
   <script>
+    // =====================================================================
     // RULES YOU CAN CHANGE
-    // Change the grid size here. The grid is always square in this version.
-    // ASSUMPTION: Each dot marks a cell's center; a wall connects neighboring cells.
+    // =====================================================================
+
+    // How many squares along each side of the maze. 5 means a 5 by 5 maze.
     const GRID_SIZE = 5;
 
-    // Drawing measurements keep dots and wall hit areas easy to tap.
-    const CELL_GAP = 100;
-    const GRID_PADDING = 70;
-    const VIEW_SIZE = GRID_PADDING * 2 + CELL_GAP * (GRID_SIZE - 1);
+    // ASSUMPTION: up to 2 portal pairs, the same limit as validate_setup() in src/environment.py.
+    const MAX_PORTAL_PAIRS = 2;
 
-    const maze = document.querySelector("#maze");
-    const wallCount = document.querySelector("#wall-count");
-    const message = document.querySelector("#message");
-    const clearButton = document.querySelector("#clear-walls");
+    // ASSUMPTION: portals work both ways, like apply_portal() in src/environment.py.
+    // Stepping on either end sends Hearty to the other end.
+    // Set this to false for one-way portals (from the end placed first to the end placed second).
+    // In this stage it only changes the drawing: one-way links get an arrow.
+    const PORTALS_WORK_BOTH_WAYS = true;
 
-    // Each key names one shared edge between two neighboring cells.
-    // The order is always top-to-bottom or left-to-right, so an edge has one key.
+    // After you tap to place a hole, keep holding another one so you can add several quickly.
+    const KEEP_HOLDING_HOLES = true;
+
+    // Hearty breathing, the treasure twinkling and portals swirling while nothing else happens.
+    // Set to false if it is distracting on a projector. Movements that answer what you do stay on.
+    const IDLE_ANIMATIONS = true;
+
+    // One color for each portal pair. Add a color if you raise MAX_PORTAL_PAIRS.
+    const PORTAL_COLORS = ["#2f7cf6", "#d63fa0"];
+
+    // ASSUMPTION: a square holds at most one piece, so pieces can never overlap.
+    // ASSUMPTION: there is exactly one Hearty and one treasure, and any number of holes.
+
+    // =====================================================================
+    // DRAWING SIZES (you should not need to change these)
+    // =====================================================================
+
+    // The board is drawn in its own units and then stretched to fit the screen.
+    const CELL = 100;                                 // width of one square
+    const MARGIN = 48;                                // space around the maze for the outer dots and the A B C / 1 2 3 labels
+    const BOARD_SIZE = MARGIN * 2 + CELL * GRID_SIZE;
+    const DOT_TAP_RADIUS = 28;                        // how close to a dot a tap has to be
+    const DRAG_START_DISTANCE = 8;                    // pixels a finger must move before a tap becomes a drag
+    const TAP_WOBBLE = 24;                            // a drag that ends this close to where it started still counts as a tap
+    const UNDO_LIMIT = 50;                            // how many steps Undo remembers
+
+    // Each piece is drawn from one or more pictures stacked on top of each other (see PICTURES at the bottom).
+    // "origin" is the point a picture moves around, in the piece's own 0-100 box.
+    const PIECE_LAYERS = {
+      hearty: [{ picture: "piece-hearty", className: "art-hearty", origin: [50, 90] }],   // breathes from the feet
+      treasure: [{ picture: "piece-treasure" }, { picture: "treasure-sparkle", className: "art-sparkle", origin: [79, 20] }],
+      hole: [{ picture: "piece-hole" }],
+      portal: [{ picture: "piece-portal" }, { picture: "portal-swirl", className: "art-swirl", origin: [50, 50] }]
+    };
+
+    // =====================================================================
+    // THE MAZE DATA
+    // =====================================================================
+
+    // WALLS
+    // Every wall sits on the line between two neighboring cells, so a wall is named
+    // after those two cells. "1,2|1,3" is the wall between row 1 column 2 and row 1 column 3.
+    // The cell that comes first (higher up, then further left) is always written first,
+    // so each wall has exactly one name and two cells can never disagree about it.
+    // The outer border is never stored. It is always there.
     const walls = new Set();
-    let selectedCell = null;
+
+    // PIECES
+    // What sits on each cell: "row,column" -> piece.
+    // A piece looks like { type: "hearty" } or { type: "portal", pair: 0, end: 1 }.
+    // A cell can only have one entry here, which is what stops two pieces sharing a cell.
+    const pieces = new Map();
+
+    // =====================================================================
+    // WHAT THE STUDENT IS DOING RIGHT NOW
+    // =====================================================================
+
+    let selectedDot = null;     // first dot tapped when building a wall: { row, column }
+    let holding = null;         // a piece picked up by tapping: { type, from } ("from" is null for a new piece)
+    let press = null;           // a finger or mouse press that is still going (could become a tap or a drag)
+    let liftedCell = null;      // the cell a dragged piece came from, drawn faded while dragging
+    let justPlaced = null;      // cell that just got a piece, so it plays its landing movement
+    let justBuilt = new Set();  // walls that were just built, so they play their "draw in" movement
+    let noteText = "";
+    let noteIsWarning = false;
+    let noteTimer = null;
+    let lastSay = "";
+    const history = [];         // saved copies of the maze for Undo
+
+    // If the computer is set to "reduce motion", skip all the decorative movement.
+    const calmMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    const board = document.querySelector("#board");
+    const effects = document.querySelector("#effects");
+    const tokens = [...document.querySelectorAll(".token")];
+    const coachFace = document.querySelector("#coach-face");
+    const coachBubble = document.querySelector("#coach-bubble");
+    const coachSay = document.querySelector("#coach-say");
+    const coachNote = document.querySelector("#coach-note");
+    const coachCancel = document.querySelector("#coach-cancel");
+    const coachRemove = document.querySelector("#coach-remove");
+    const wallCount = document.querySelector("#wall-count");
+    const undoButton = document.querySelector("#undo");
+    const clearWallsButton = document.querySelector("#clear-walls");
+    const clearPiecesButton = document.querySelector("#clear-pieces");
+
+    // =====================================================================
+    // SMALL HELPERS
+    // =====================================================================
 
     function cellKey(row, column) {
       return `${row},${column}`;
     }
 
-    function edgeKey(rowA, columnA, rowB, columnB) {
-      if (rowA > rowB || columnA > columnB) {
-        [rowA, rowB] = [rowB, rowA];
-        [columnA, columnB] = [columnB, columnA];
-      }
-      return `${rowA},${columnA}|${rowB},${columnB}`;
+    function readKey(key) {
+      const [row, column] = key.split(",").map(Number);
+      return { row, column };
     }
 
-    function pointFor(row, column) {
+    // The name a person would use for a square, like "C2": column letter, then row number.
+    function squareName(key) {
+      const { row, column } = readKey(key);
+      return `${String.fromCharCode(65 + column)}${row + 1}`;
+    }
+
+    // The one and only name for the wall between two neighboring cells.
+    function wallKey(cellA, cellB) {
+      const a = readKey(cellA);
+      const b = readKey(cellB);
+      const aComesFirst = a.row < b.row || (a.row === b.row && a.column < b.column);
+      return aComesFirst ? `${cellA}|${cellB}` : `${cellB}|${cellA}`;
+    }
+
+    // Is there a wall between these two cells? The order you ask in does not matter.
+    // The learning engine in Stage 3 will use this to decide if a move is blocked.
+    function hasWallBetween(cellA, cellB) {
+      return walls.has(wallKey(cellA, cellB));
+    }
+
+    function areNeighbors(dotA, dotB) {
+      return Math.abs(dotA.row - dotB.row) + Math.abs(dotA.column - dotB.column) === 1;
+    }
+
+    function sameDot(dotA, dotB) {
+      return dotA.row === dotB.row && dotA.column === dotB.column;
+    }
+
+    // Dots sit on the corners of cells. Two dots side by side make one short line.
+    // This works out which two cells that line separates.
+    // It returns null when the line is part of the outer border.
+    function cellsBesideLine(dotA, dotB) {
+      if (dotA.row === dotB.row) {
+        // A flat line: one cell above it, one below it.
+        const row = dotA.row;
+        const column = Math.min(dotA.column, dotB.column);
+        if (row === 0 || row === GRID_SIZE) return null;
+        return [cellKey(row - 1, column), cellKey(row, column)];
+      }
+      // A standing line: one cell to its left, one to its right.
+      const column = dotA.column;
+      const row = Math.min(dotA.row, dotB.row);
+      if (column === 0 || column === GRID_SIZE) return null;
+      return [cellKey(row, column - 1), cellKey(row, column)];
+    }
+
+    // The opposite question, for drawing: where are the two ends of a wall's line?
+    function lineForWall(key) {
+      const [first, second] = key.split("|").map(readKey);
+      if (first.row === second.row) {
+        // Cells side by side: the wall stands on the left edge of the second cell.
+        const x = MARGIN + second.column * CELL;
+        return { x1: x, y1: MARGIN + first.row * CELL, x2: x, y2: MARGIN + (first.row + 1) * CELL };
+      }
+      // Cells on top of each other: the wall lies on the top edge of the second cell.
+      const y = MARGIN + second.row * CELL;
+      return { x1: MARGIN + first.column * CELL, y1: y, x2: MARGIN + (first.column + 1) * CELL, y2: y };
+    }
+
+    // The dots beside this one that it could build an inside wall with.
+    function wallOptionsFrom(dot) {
+      const options = [];
+      for (const [rowStep, columnStep] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+        const other = { row: dot.row + rowStep, column: dot.column + columnStep };
+        if (other.row < 0 || other.row > GRID_SIZE || other.column < 0 || other.column > GRID_SIZE) continue;
+        const cells = cellsBesideLine(dot, other);
+        if (cells !== null) options.push({ dot: other, key: wallKey(cells[0], cells[1]) });
+      }
+      return options;
+    }
+
+    function cellCenter(key) {
+      const { row, column } = readKey(key);
+      return { x: MARGIN + (column + 0.5) * CELL, y: MARGIN + (row + 0.5) * CELL };
+    }
+
+    function dotPoint(dot) {
+      return { x: MARGIN + dot.column * CELL, y: MARGIN + dot.row * CELL };
+    }
+
+    // Turn a spot on the screen into board units.
+    function toBoardPoint(clientX, clientY) {
+      const box = board.getBoundingClientRect();
       return {
-        x: GRID_PADDING + column * CELL_GAP,
-        y: GRID_PADDING + row * CELL_GAP
+        x: (clientX - box.left) * BOARD_SIZE / box.width,
+        y: (clientY - box.top) * BOARD_SIZE / box.height
       };
     }
 
-    function addSvgElement(name, attributes, parent = maze) {
+    // The opposite: where a cell's middle is on the screen.
+    function screenPointOfCell(key) {
+      const box = board.getBoundingClientRect();
+      const center = cellCenter(key);
+      return { x: box.left + center.x * box.width / BOARD_SIZE, y: box.top + center.y * box.height / BOARD_SIZE };
+    }
+
+    function screenPointOfToken(type) {
+      const box = tokenFor(type).querySelector(".token-art").getBoundingClientRect();
+      return { x: box.left + box.width / 2, y: box.top + box.height / 2 };
+    }
+
+    // Which cell is under this spot on the screen? null when it is outside the maze.
+    function cellAt(clientX, clientY) {
+      const point = toBoardPoint(clientX, clientY);
+      const column = Math.floor((point.x - MARGIN) / CELL);
+      const row = Math.floor((point.y - MARGIN) / CELL);
+      if (row < 0 || row >= GRID_SIZE || column < 0 || column >= GRID_SIZE) return null;
+      return cellKey(row, column);
+    }
+
+    // Which dot is close to this spot on the screen? null when none is close enough.
+    function dotNear(clientX, clientY, reach) {
+      const point = toBoardPoint(clientX, clientY);
+      const dot = {
+        row: Math.round((point.y - MARGIN) / CELL),
+        column: Math.round((point.x - MARGIN) / CELL)
+      };
+      if (dot.row < 0 || dot.row > GRID_SIZE || dot.column < 0 || dot.column > GRID_SIZE) return null;
+      const center = dotPoint(dot);
+      return Math.hypot(point.x - center.x, point.y - center.y) <= reach ? dot : null;
+    }
+
+    function tokenFor(type) {
+      return tokens.find((token) => token.dataset.type === type);
+    }
+
+    // Names used in messages to students.
+    function titleOf(type) {
+      return { hearty: "Hearty", treasure: "Treasure", hole: "Hole", portal: "Portal" }[type];
+    }
+
+    function describe(piece) {
+      if (piece.type === "portal") return `portal ${piece.pair + 1}`;
+      return { hearty: "Hearty", treasure: "the treasure", hole: "a hole" }[piece.type];
+    }
+
+    function findCell(type) {
+      for (const [key, piece] of pieces) {
+        if (piece.type === type) return key;
+      }
+      return null;
+    }
+
+    function countOf(type) {
+      let count = 0;
+      for (const piece of pieces.values()) {
+        if (piece.type === type) count += 1;
+      }
+      return count;
+    }
+
+    // Both ends of one portal pair, as a list of [cell, piece].
+    function portalEnds(pair) {
+      return [...pieces].filter(([, piece]) => piece.type === "portal" && piece.pair === pair);
+    }
+
+    // The portal pair that has one end placed and is waiting for its partner, or -1.
+    function waitingPortalPair() {
+      for (let pair = 0; pair < MAX_PORTAL_PAIRS; pair += 1) {
+        if (portalEnds(pair).length === 1) return pair;
+      }
+      return -1;
+    }
+
+    // Where a new portal from the shelf would go: finish a waiting pair first,
+    // otherwise start the first unused pair. null when every pair is used.
+    function nextPortalSpot() {
+      const waiting = waitingPortalPair();
+      if (waiting !== -1) return { pair: waiting, end: 1 - portalEnds(waiting)[0][1].end };
+      for (let pair = 0; pair < MAX_PORTAL_PAIRS; pair += 1) {
+        if (portalEnds(pair).length === 0) return { pair, end: 0 };
+      }
+      return null;
+    }
+
+    function portalColor(pair) {
+      return PORTAL_COLORS[pair % PORTAL_COLORS.length];
+    }
+
+    function portalColorFor(type, from) {
+      if (type !== "portal") return "";
+      return portalColor(from !== null ? pieces.get(from).pair : nextPortalSpot().pair);
+    }
+
+    // =====================================================================
+    // CHANGING THE MAZE
+    // =====================================================================
+
+    // Keep a copy of the maze so Undo can bring it back.
+    function saveForUndo() {
+      history.push({
+        walls: [...walls],
+        pieces: [...pieces].map(([key, piece]) => [key, { ...piece }])
+      });
+      if (history.length > UNDO_LIMIT) history.shift();
+    }
+
+    function undo() {
+      const saved = history.pop();
+      stopEverything();
+      if (saved === undefined) {
+        note("Nothing to undo yet.");
+        return;
+      }
+      walls.clear();
+      saved.walls.forEach((key) => walls.add(key));
+      pieces.clear();
+      saved.pieces.forEach(([key, piece]) => pieces.set(key, piece));
+      playOn(undoButton.querySelector("svg"), [{ transform: "rotate(0deg)" }, { transform: "rotate(-360deg)" }], { duration: 450, easing: "ease-out" });
+      note("Undone.");
+      refresh();
+    }
+
+    function toggleWall(key) {
+      saveForUndo();
+      if (walls.has(key)) {
+        walls.delete(key);
+        crumble(key);
+        note("Wall knocked down.");
+      } else {
+        walls.add(key);
+        justBuilt.add(key);
+        note("Wall built.");
+      }
+      selectedDot = null;
+      refresh();
+    }
+
+    // Before picking up a piece, check it is allowed and work out where it comes from.
+    // Returns { type, from } or null. "from" is the cell it is leaving, or null for a new piece.
+    function pickUp(type, from) {
+      // There is only one Hearty and one treasure, so taking another from the shelf moves it.
+      if (from === null && (type === "hearty" || type === "treasure")) from = findCell(type);
+      if (from === null && type === "portal" && nextPortalSpot() === null) {
+        const allPairs = MAX_PORTAL_PAIRS === 1 ? "The portal pair is" : MAX_PORTAL_PAIRS === 2 ? "Both portal pairs are" : `All ${MAX_PORTAL_PAIRS} portal pairs are`;
+        note(`${allPairs} already used.`, true);
+        return null;
+      }
+      return { type, from };
+    }
+
+    // Put a piece on a cell. "target" is null when it was dropped outside the maze.
+    // "byTapping" is true when the student tapped a square instead of dragging.
+    // "droppedAt" is where on the board a dragged piece was let go (for the "poof").
+    // Returns false when nothing could be placed, so a dragged piece can fly back.
+    function dropPiece(type, from, target, byTapping, droppedAt = null) {
+      if (target === null) {
+        if (from !== null) {
+          removePiece(from, droppedAt);
+          return true;
+        }
+        note("Drop it on a square inside the maze.", true);
+        refresh();
+        return false;
+      }
+
+      // Dropped back where it started: nothing changes.
+      if (target === from) {
+        holding = null;
+        refresh();
+        return true;
+      }
+
+      const occupant = pieces.get(target);
+      if (occupant !== undefined) {
+        note(`${squareName(target)} already has ${describe(occupant)}.`, true);
+        refresh();
+        return false;
+      }
+
+      saveForUndo();
+      let piece;
+      if (from !== null) {
+        piece = pieces.get(from);
+        pieces.delete(from);
+      } else if (type === "portal") {
+        piece = { type, ...nextPortalSpot() };
+      } else {
+        piece = { type };
+      }
+      pieces.set(target, piece);
+      justPlaced = target;
+      holding = null;
+
+      const isNew = from === null;
+      let linked = false;
+      if (!isNew) {
+        note(`${titleOf(type)} moved to ${squareName(target)}.`);
+      } else if (type === "portal" && portalEnds(piece.pair).length === 1) {
+        // A portal is no use on its own, so pick up its partner straight away.
+        holding = { type: "portal", from: null };
+        note(`Portal ${piece.pair + 1} placed on ${squareName(target)}.`);
+      } else if (type === "portal") {
+        linked = true;
+        note(PORTALS_WORK_BOTH_WAYS
+          ? `Portal ${piece.pair + 1} linked! In one end, out the other.`
+          : `Portal ${piece.pair + 1} linked! It only goes one way.`);
+      } else if (type === "hole" && byTapping && KEEP_HOLDING_HOLES) {
+        holding = { type: "hole", from: null };
+        note(`Hole dug on ${squareName(target)}. Tap more squares for more.`);
+      } else {
+        note({ hearty: "Here I am!", treasure: "Treasure hidden.", hole: `Hole dug on ${squareName(target)}.` }[type]);
+      }
+      refresh();
+      celebrate(piece, target, isNew);
+      if (linked || (type === "portal" && !isNew && portalEnds(piece.pair).length === 2)) {
+        const ends = portalEnds(piece.pair).sort((a, b) => a[1].end - b[1].end);
+        zap(ends[0][0], ends[1][0], portalColor(piece.pair));
+      }
+      return true;
+    }
+
+    // Take a piece off the board. Removing either end of a portal removes the whole pair,
+    // because a portal can't work without its partner.
+    function removePiece(cell, droppedAt = null) {
+      const piece = pieces.get(cell);
+      if (piece === undefined) return;
+      saveForUndo();
+      if (piece.type === "portal") {
+        for (const [key, end] of portalEnds(piece.pair)) {
+          poof(key === cell && droppedAt !== null ? droppedAt : cellCenter(key), end);
+          pieces.delete(key);
+        }
+        note(`Portal ${piece.pair + 1} removed, both ends.`);
+      } else {
+        poof(droppedAt ?? cellCenter(cell), piece);
+        pieces.delete(cell);
+        note(`${titleOf(piece.type)} removed.`);
+      }
+      holding = null;
+      refresh();
+    }
+
+    // Forget any half-finished action: a picked-up piece, a chosen dot, a drag.
+    function stopEverything() {
+      holding = null;
+      selectedDot = null;
+      liftedCell = null;
+      if (press !== null && press.drag) press.drag.ghost?.remove();
+      press = null;
+      document.body.classList.remove("is-dragging");
+    }
+
+    // =====================================================================
+    // BUILDING WALLS WITH DOTS
+    // =====================================================================
+
+    function chooseDot(dot) {
+      // Tapping the chosen dot again lets go of it.
+      if (selectedDot !== null && sameDot(selectedDot, dot)) {
+        selectedDot = null;
+        note("");
+        refresh();
+        return;
+      }
+
+      // Second dot, right beside the first: build or knock down the wall between them.
+      if (selectedDot !== null && areNeighbors(selectedDot, dot)) {
+        const cells = cellsBesideLine(selectedDot, dot);
+        if (cells === null) {
+          note("That's the outside wall already.", true);
+          return;
+        }
+        toggleWall(wallKey(cells[0], cells[1]));
+        return;
+      }
+
+      // Otherwise this dot becomes the first dot.
+      if (wallOptionsFrom(dot).length === 0) {
+        selectedDot = null;
+        note("Corner dots can't make inside walls.", true);
+        refresh();
+        return;
+      }
+      const switched = selectedDot !== null;
+      selectedDot = dot;
+      note(switched ? "Started again from this dot." : "");
+      refresh();
+    }
+
+    // =====================================================================
+    // HOLDING A PIECE BY TAPPING (tap a piece, then tap a square)
+    // =====================================================================
+
+    function tapToken(type) {
+      selectedDot = null;
+      // Tapping the piece you are already holding puts it back.
+      if (holding !== null && holding.type === type) {
+        holding = null;
+        note("");
+        refresh();
+        return;
+      }
+      holding = pickUp(type, null);
+      if (holding !== null) note("");
+      refresh();
+    }
+
+    function tapPieceOnBoard(cell) {
+      selectedDot = null;
+      holding = pickUp(pieces.get(cell).type, cell);
+      note("");
+      refresh();
+    }
+
+    // What a tap means depends on what it landed on, and whether a piece is being held.
+    // "cell" is the cell under the finger (or under the keyboard focus).
+    function handleTap(what, cell) {
+      if (what.kind === "token") {
+        tapToken(what.type);
+        return;
+      }
+      // Holding a piece from the board and tapping another piece: pick that one up instead.
+      if (holding !== null && holding.from !== null && what.kind === "piece" && what.cell !== holding.from) {
+        tapPieceOnBoard(what.cell);
+        return;
+      }
+      if (holding !== null) {
+        if (cell === null) {
+          note("Tap a square inside the maze.", true);
+          return;
+        }
+        dropPiece(holding.type, holding.from, cell, true);
+        return;
+      }
+      if (what.kind === "piece") {
+        tapPieceOnBoard(what.cell);
+      } else if (what.kind === "dot") {
+        chooseDot({ row: Number(what.row), column: Number(what.column) });
+      } else if (what.kind === "wall" || what.kind === "option") {
+        toggleWall(what.key);
+      } else {
+        selectedDot = null;
+        note("Drag a piece from the shelf, or tap a dot.");
+        refresh();
+      }
+    }
+
+    // =====================================================================
+    // DRAGGING (pieces from the shelf or the board, and walls along the dots)
+    // =====================================================================
+
+    function startDrag(what, event) {
+      if (holding !== null && what.kind !== "token" && what.kind !== "piece") return null;
+
+      if (what.kind === "token" || what.kind === "piece") {
+        const type = what.kind === "token" ? what.type : pieces.get(what.cell).type;
+        const picked = pickUp(type, what.kind === "piece" ? what.cell : null);
+        if (picked === null) return null;
+        const holdingBefore = holding;
+        holding = null;
+        selectedDot = null;
+        liftedCell = picked.from;
+        note(type === "hearty" ? "Wheee!" : "");
+        refresh();
+        document.body.classList.add("is-dragging");
+        return { kind: "piece", ...picked, ghost: makeGhost(picked), holdingBefore, tilt: 0, lastX: event.clientX };
+      }
+
+      if (what.kind === "dot") {
+        const dotBefore = selectedDot;
+        selectedDot = { row: Number(what.row), column: Number(what.column) };
+        note("");
+        refresh();
+        return { kind: "wall", built: 0, dotBefore };
+      }
+
+      return null;
+    }
+
+    // The copy of the piece that follows the finger. It is drawn at the same size
+    // as a square on the board, so you can see exactly what you are placing.
+    function makeGhost(picked) {
+      const size = board.getBoundingClientRect().width * CELL / BOARD_SIZE;
+      const ghost = document.createElement("div");
+      ghost.className = "ghost";
+      ghost.style.width = `${size}px`;
+      ghost.style.height = `${size}px`;
+      ghost.style.color = portalColorFor(picked.type, picked.from);
+      const layers = PIECE_LAYERS[picked.type].map((layer) => `<use href="#${layer.picture}"></use>`).join("");
+      ghost.innerHTML = `<svg viewBox="0 0 100 100">${layers}</svg><span class="ghost-label">Remove</span>`;
+      document.body.append(ghost);
+      return ghost;
+    }
+
+    function moveDrag(drag, event) {
+      if (drag.kind === "piece") {
+        drag.ghost.style.left = `${event.clientX}px`;
+        drag.ghost.style.top = `${event.clientY}px`;
+
+        // The piece swings a little in the direction you move it, like it's being carried,
+        // and straightens up again when your finger stops.
+        const push = Math.max(-18, Math.min(18, (event.clientX - drag.lastX) * 1.6));
+        drag.tilt = drag.tilt * 0.7 + push * 0.3;
+        drag.lastX = event.clientX;
+        drag.ghost.style.setProperty("--tilt", `${drag.tilt.toFixed(1)}deg`);
+        clearTimeout(drag.settle);
+        drag.settle = setTimeout(() => drag.ghost.style.setProperty("--tilt", "0deg"), 120);
+
+        const target = cellAt(event.clientX, event.clientY);
+        drag.ghost.classList.toggle("is-removing", target === null && drag.from !== null);
+        showDropMarker(target, target === drag.from || !pieces.has(target));
+        return;
+      }
+
+      // Wall drawing: each time the finger reaches the next dot, build the wall on the way.
+      // If the finger moved fast and skipped dots in a straight line, fill them in one by one.
+      const reached = dotNear(event.clientX, event.clientY, CELL * 0.35);
+      if (reached !== null && (reached.row === selectedDot.row || reached.column === selectedDot.column)) {
+        let changed = false;
+        while (!sameDot(selectedDot, reached)) {
+          const next = {
+            row: selectedDot.row + Math.sign(reached.row - selectedDot.row),
+            column: selectedDot.column + Math.sign(reached.column - selectedDot.column)
+          };
+          const cells = cellsBesideLine(selectedDot, next);
+          if (cells !== null) {
+            const key = wallKey(cells[0], cells[1]);
+            if (!walls.has(key)) {
+              if (drag.built === 0) saveForUndo();    // the whole stroke is one Undo step
+              walls.add(key);
+              justBuilt.add(key);
+              drag.built += 1;
+            }
+          }
+          selectedDot = next;
+          changed = true;
+        }
+        if (changed) refresh();
+      }
+      showRubberBand(event);
+    }
+
+    function finishDrag(drag, event) {
+      if (drag.kind === "piece") {
+        clearTimeout(drag.settle);
+        document.body.classList.remove("is-dragging");
+        liftedCell = null;
+        const target = cellAt(event.clientX, event.clientY);
+        const placed = dropPiece(drag.type, drag.from, target, false, toBoardPoint(event.clientX, event.clientY));
+        if (placed) {
+          drag.ghost.remove();
+        } else {
+          // Nothing happened, so the piece flies back to where it came from.
+          flyBack(drag.ghost, drag.from !== null ? screenPointOfCell(drag.from) : screenPointOfToken(drag.type));
+        }
+        return;
+      }
+      selectedDot = null;
+      if (drag.built > 0) note(drag.built === 1 ? "Wall built." : `${drag.built} walls built.`);
+      refresh();
+    }
+
+    function cancelDrag(drag) {
+      if (drag.kind === "piece") {
+        clearTimeout(drag.settle);
+        drag.ghost.remove();
+      }
+      document.body.classList.remove("is-dragging");
+      liftedCell = null;
+      // Put things back the way they were before the drag started.
+      if (drag.kind === "wall") selectedDot = drag.dotBefore;
+      if (drag.kind === "piece") holding = drag.holdingBefore;
+      refresh();
+    }
+
+    // Green square = you can drop here. Red square = that square is taken.
+    function showDropMarker(cell, allowed) {
+      const marker = board.querySelector("#drop-marker");
+      if (cell === null) {
+        marker.setAttribute("visibility", "hidden");
+        return;
+      }
+      const { row, column } = readKey(cell);
+      marker.setAttribute("x", MARGIN + column * CELL + 7);
+      marker.setAttribute("y", MARGIN + row * CELL + 7);
+      marker.classList.toggle("is-blocked", !allowed);
+      marker.setAttribute("visibility", "visible");
+    }
+
+    // The dotted line from the last dot to your finger while you draw walls.
+    function showRubberBand(event) {
+      const line = board.querySelector("#wall-rubber");
+      const start = dotPoint(selectedDot);
+      const end = toBoardPoint(event.clientX, event.clientY);
+      line.setAttribute("x1", start.x);
+      line.setAttribute("y1", start.y);
+      line.setAttribute("x2", end.x);
+      line.setAttribute("y2", end.y);
+      line.setAttribute("visibility", "visible");
+    }
+
+    // =====================================================================
+    // DRAWING THE BOARD
+    // The whole board is redrawn from the maze data after every change.
+    // =====================================================================
+
+    function addSvg(name, attributes, parent = board) {
       const element = document.createElementNS("http://www.w3.org/2000/svg", name);
       for (const [key, value] of Object.entries(attributes)) {
         element.setAttribute(key, value);
@@ -295,139 +1502,708 @@
       return element;
     }
 
-    function drawGrid() {
-      maze.replaceChildren();
-      maze.setAttribute("viewBox", `0 0 ${VIEW_SIZE} ${VIEW_SIZE}`);
-      maze.setAttribute("aria-label", `${GRID_SIZE} by ${GRID_SIZE} maze grid. Choose two neighboring dots to add a wall, or choose a wall to remove it.`);
+    function drawBoard() {
+      // Remember what had keyboard focus, so it can get focus back after redrawing.
+      const focusedId = board.contains(document.activeElement) ? document.activeElement.id : null;
 
-      // Light guide lines show the cells; these are not walls.
-      for (let index = 0; index < GRID_SIZE; index += 1) {
-        const position = GRID_PADDING + index * CELL_GAP;
-        addSvgElement("line", {
-          x1: GRID_PADDING, y1: position,
-          x2: GRID_PADDING + (GRID_SIZE - 1) * CELL_GAP, y2: position,
-          class: "grid-guide"
-        });
-        addSvgElement("line", {
-          x1: position, y1: GRID_PADDING,
-          x2: position, y2: GRID_PADDING + (GRID_SIZE - 1) * CELL_GAP,
-          class: "grid-guide"
-        });
-      }
+      board.replaceChildren();
+      board.setAttribute("viewBox", `0 0 ${BOARD_SIZE} ${BOARD_SIZE}`);
+      board.setAttribute("aria-label", `Maze, ${GRID_SIZE} by ${GRID_SIZE} squares`);
+      board.classList.toggle("is-placing", holding !== null);
+      // Redrawing would restart the always-on movements from the beginning, which looks jumpy.
+      // Starting them "this far in" keeps them flowing smoothly instead.
+      board.style.setProperty("--phase", `${-(performance.now() % 12000)}ms`);
+      const span = GRID_SIZE * CELL;
 
-      // The border is drawn around the board and does not need wall data.
-      const outside = GRID_PADDING - CELL_GAP / 2;
-      const inside = GRID_PADDING + (GRID_SIZE - 1) * CELL_GAP + CELL_GAP / 2;
-      addSvgElement("rect", {
-        x: outside, y: outside,
-        width: inside - outside, height: inside - outside,
-        class: "outer-border"
-      });
-
-      // Draw each saved wall with a wide invisible stroke for easy tapping.
-      for (const key of walls) {
-        const [first, second] = key.split("|");
-        const [rowA, columnA] = first.split(",").map(Number);
-        const [rowB, columnB] = second.split(",").map(Number);
-        const start = pointFor(rowA, columnA);
-        const end = pointFor(rowB, columnB);
-        const wallGroup = addSvgElement("g", { role: "button", tabindex: "0", "aria-label": "Remove wall" });
-        const hitArea = addSvgElement("line", {
-          x1: start.x, y1: start.y, x2: end.x, y2: end.y,
-          class: "wall-hit-area"
-        }, wallGroup);
-        addSvgElement("line", {
-          x1: start.x, y1: start.y, x2: end.x, y2: end.y,
-          class: "wall-visible"
-        }, wallGroup);
-        hitArea.addEventListener("click", (event) => {
-          event.stopPropagation();
-          walls.delete(key);
-          selectedCell = null;
-          message.textContent = "Wall removed. Choose a dot to add another.";
-          drawGrid();
-          updateCount();
-        });
-        wallGroup.addEventListener("keydown", (event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            walls.delete(key);
-            selectedCell = null;
-            message.textContent = "Wall removed. Choose a dot to add another.";
-            drawGrid();
-            updateCount();
-          }
-        });
-      }
-
-      // A dot represents a cell. Selecting two neighbors toggles their shared edge.
+      // 1. The floor: a shadow underneath, then checkered squares.
+      //    Each square is also what you tap to put down a piece you are holding.
+      addSvg("rect", { x: MARGIN + 8, y: MARGIN + 10, width: span, height: span, rx: 14, class: "floor-shadow" });
+      addSvg("rect", { x: MARGIN, y: MARGIN, width: span, height: span, class: "floor" });
       for (let row = 0; row < GRID_SIZE; row += 1) {
         for (let column = 0; column < GRID_SIZE; column += 1) {
-          const point = pointFor(row, column);
-          const dotGroup = addSvgElement("g", {
-            class: `dot-group${selectedCell === cellKey(row, column) ? " selected" : ""}`,
+          const key = cellKey(row, column);
+          const occupant = pieces.get(key);
+          const group = addSvg("g", {
+            id: `cell-${row}-${column}`,
+            class: occupant === undefined ? "cell is-open" : "cell",
+            "data-kind": "cell",
+            "data-cell": key,
             role: "button",
-            tabindex: "0",
-            "aria-label": `Row ${row + 1}, column ${column + 1}`
+            tabindex: holding !== null ? "0" : "-1",
+            "aria-label": `Square ${squareName(key)}, ${occupant === undefined ? "empty" : describe(occupant)}`
           });
-          const hitArea = addSvgElement("circle", {
-            cx: point.x, cy: point.y, r: 28, class: "dot-hit-area"
-          }, dotGroup);
-          addSvgElement("circle", { cx: point.x, cy: point.y, r: 11, class: "dot" }, dotGroup);
-          hitArea.addEventListener("click", () => chooseCell(row, column));
-          dotGroup.addEventListener("keydown", (event) => {
-            if (event.key === "Enter" || event.key === " ") {
-              event.preventDefault();
-              chooseCell(row, column);
-            }
-          });
+          const x = MARGIN + column * CELL;
+          const y = MARGIN + row * CELL;
+          addSvg("rect", { x, y, width: CELL, height: CELL, class: (row + column) % 2 === 0 ? "square-a" : "square-b" }, group);
+          addSvg("rect", { x: x + 7, y: y + 7, width: CELL - 14, height: CELL - 14, rx: 12, class: "cell-target" }, group);
         }
       }
+
+      // 2. The outer border. It is drawn every time and never stored as walls.
+      addSvg("rect", { x: MARGIN, y: MARGIN, width: span, height: span, rx: 10, class: "border" });
+
+      // 3. Letters across the top and numbers down the side.
+      for (let index = 0; index < GRID_SIZE; index += 1) {
+        const middle = MARGIN + (index + 0.5) * CELL;
+        addSvg("text", { x: middle, y: MARGIN - 27, class: "coord" }).textContent = String.fromCharCode(65 + index);
+        addSvg("text", { x: MARGIN - 27, y: middle, class: "coord" }).textContent = index + 1;
+      }
+
+      // 4. Dotted links between the two ends of each portal pair.
+      for (let pair = 0; pair < MAX_PORTAL_PAIRS; pair += 1) {
+        const ends = portalEnds(pair).sort((a, b) => a[1].end - b[1].end);
+        if (ends.length === 2) drawPortalLink(ends[0][0], ends[1][0], portalColor(pair));
+      }
+
+      // 5. Walls. The wide invisible line makes a wall easy to tap.
+      for (const key of walls) {
+        const line = lineForWall(key);
+        const group = addSvg("g", {
+          id: `wall-${key}`,
+          class: justBuilt.has(key) ? "wall is-new" : "wall",
+          "data-kind": "wall",
+          "data-key": key,
+          role: "button",
+          tabindex: holding !== null ? "-1" : "0",
+          "aria-label": "Wall. Press Enter to knock it down."
+        });
+        addSvg("line", { ...line, class: "hit-line" }, group);
+        addSvg("line", { ...line, class: "wall-line" }, group);
+      }
+
+      // 6. Pieces.
+      for (const [key, piece] of pieces) drawPiece(key, piece);
+
+      // One-way portals get an arrow on top of the pieces, so a piece can't hide it.
+      if (!PORTALS_WORK_BOTH_WAYS) {
+        for (let pair = 0; pair < MAX_PORTAL_PAIRS; pair += 1) {
+          const ends = portalEnds(pair).sort((a, b) => a[1].end - b[1].end);
+          if (ends.length === 2) drawPortalArrow(ends[0][0], ends[1][0], portalColor(pair));
+        }
+      }
+
+      // 7. When a dot is chosen, show the walls it could make with its neighbors.
+      const options = selectedDot !== null ? wallOptionsFrom(selectedDot) : [];
+      for (const option of options) {
+        const start = dotPoint(selectedDot);
+        const end = dotPoint(option.dot);
+        const group = addSvg("g", {
+          class: walls.has(option.key) ? "option is-removal" : "option",
+          "data-kind": "option",
+          "data-key": option.key
+        });
+        addSvg("line", { x1: start.x, y1: start.y, x2: end.x, y2: end.y, class: "hit-line" }, group);
+        addSvg("line", { x1: start.x, y1: start.y, x2: end.x, y2: end.y, class: "option-line" }, group);
+      }
+
+      // 8. Dots on every corner. These are what you tap to build walls.
+      for (let row = 0; row <= GRID_SIZE; row += 1) {
+        for (let column = 0; column <= GRID_SIZE; column += 1) {
+          const point = dotPoint({ row, column });
+          const isSelected = selectedDot !== null && sameDot(selectedDot, { row, column });
+          const isNeighbor = options.some((option) => sameDot(option.dot, { row, column }));
+          const group = addSvg("g", {
+            id: `dot-${row}-${column}`,
+            class: `dot${isSelected ? " is-selected" : ""}${isNeighbor ? " is-neighbor" : ""}`,
+            "data-kind": "dot",
+            "data-row": row,
+            "data-column": column,
+            role: "button",
+            tabindex: holding !== null ? "-1" : "0",
+            "aria-label": `Dot at corner row ${row + 1}, column ${column + 1}`
+          });
+          addSvg("circle", { cx: point.x, cy: point.y, r: DOT_TAP_RADIUS, class: "dot-hit" }, group);
+          if (isSelected) addSvg("circle", { cx: point.x, cy: point.y, r: 20, class: "dot-halo" }, group);
+          addSvg("circle", { cx: point.x, cy: point.y, r: isSelected ? 12 : isNeighbor ? 10 : 6.5, class: "dot-mark" }, group);
+        }
+      }
+
+      // 9. Helpers used while dragging: the green/red drop square and the wall-drawing line.
+      addSvg("rect", { id: "drop-marker", width: CELL - 14, height: CELL - 14, rx: 12, class: "drop-marker", visibility: "hidden" });
+      addSvg("line", { id: "wall-rubber", class: "wall-rubber", visibility: "hidden" });
+
+      // The landing and "draw in" movements should only play once.
+      justPlaced = null;
+      justBuilt = new Set();
+
+      if (focusedId !== null) document.getElementById(focusedId)?.focus();
     }
 
-    function chooseCell(row, column) {
-      if (selectedCell === null) {
-        selectedCell = { row, column };
-        message.textContent = "Now choose a dot directly beside it.";
-        drawGrid();
+    function drawPiece(key, piece) {
+      const { row, column } = readKey(key);
+      const center = cellCenter(key);
+      const corner = { x: center.x - CELL / 2, y: center.y - CELL / 2 };
+      const standsUp = piece.type === "hearty" || piece.type === "treasure";
+      const color = piece.type === "portal" ? portalColor(piece.pair) : "";
+      const classes = ["piece", `type-${piece.type}`];
+      if (key === justPlaced) classes.push("is-new");
+      if (key === liftedCell) classes.push("is-lifted");
+
+      const group = addSvg("g", {
+        id: `piece-${row}-${column}`,
+        class: classes.join(" "),
+        "data-kind": "piece",
+        "data-cell": key,
+        role: "button",
+        tabindex: "0",
+        "aria-label": `${titleOf(piece.type)}${piece.type === "portal" ? ` ${piece.pair + 1}` : ""} on ${squareName(key)}. Press Enter to move it, Delete to remove it.`
+      });
+      group.style.color = color;
+      addSvg("circle", { cx: center.x, cy: center.y, r: 42, class: "piece-hit" }, group);
+
+      // Things that stand up get a shadow on the floor.
+      if (standsUp) addSvg("ellipse", { cx: center.x, cy: center.y + 40, rx: 26, ry: 6, class: "piece-shadow" }, group);
+
+      // The "body" is what bounces when the piece lands. Things that stand up squash
+      // down onto their feet; flat things (holes, portals) grow out from their middle.
+      const body = addSvg("g", { class: "piece-body" }, group);
+      body.style.transformOrigin = `${center.x}px ${center.y + (standsUp ? 40 : 0)}px`;
+      for (const layer of PIECE_LAYERS[piece.type]) {
+        const art = addSvg("use", { href: `#${layer.picture}`, x: corner.x, y: corner.y, width: CELL, height: CELL }, body);
+        if (layer.className) art.setAttribute("class", layer.className);
+        if (layer.origin) art.style.transformOrigin = `${corner.x + layer.origin[0]}px ${corner.y + layer.origin[1]}px`;
+      }
+
+      if (piece.type === "portal") {
+        // A portal still waiting for its partner gets a slowly turning dashed ring.
+        if (portalEnds(piece.pair).length === 1) {
+          addSvg("circle", { cx: center.x, cy: center.y, r: 45, class: "piece-ring is-waiting", stroke: color }, group);
+        }
+        // The pair number, so the pairs can be told apart without relying on color.
+        addSvg("circle", { cx: center.x + 31, cy: center.y - 31, r: 13, class: "pair-badge", fill: color }, group);
+        addSvg("text", { x: center.x + 31, y: center.y - 30, class: "pair-number" }, group).textContent = piece.pair + 1;
+      }
+
+      if (holding !== null && holding.from === key) {
+        addSvg("circle", { cx: center.x, cy: center.y, r: 46, class: "piece-ring is-held" }, group);
+      }
+    }
+
+    // The gently curved line between two portal ends: where it starts, bends and ends.
+    // It bends sideways a little so it doesn't run straight through other pieces.
+    function portalCurve(fromCell, toCell) {
+      const a = cellCenter(fromCell);
+      const b = cellCenter(toCell);
+      const length = Math.hypot(b.x - a.x, b.y - a.y);
+      const bend = Math.min(60, length * 0.2);
+      const control = {
+        x: (a.x + b.x) / 2 - (b.y - a.y) / length * bend,
+        y: (a.y + b.y) / 2 + (b.x - a.x) / length * bend
+      };
+      return { a, b, control };
+    }
+
+    // A point part of the way along that curve: 0 is the start, 1 is the end.
+    function pointOnCurve({ a, b, control }, t) {
+      return {
+        x: (1 - t) * (1 - t) * a.x + 2 * (1 - t) * t * control.x + t * t * b.x,
+        y: (1 - t) * (1 - t) * a.y + 2 * (1 - t) * t * control.y + t * t * b.y
+      };
+    }
+
+    function drawPortalLink(fromCell, toCell, color) {
+      const { a, b, control } = portalCurve(fromCell, toCell);
+      addSvg("path", {
+        d: `M ${a.x} ${a.y} Q ${control.x} ${control.y} ${b.x} ${b.y}`,
+        class: "portal-link",
+        stroke: color
+      });
+    }
+
+    // An arrow halfway along the link, pointing from the first end to the second.
+    function drawPortalArrow(fromCell, toCell, color) {
+      const curve = portalCurve(fromCell, toCell);
+      const middle = pointOnCurve(curve, 0.5);
+      const angle = Math.atan2(curve.b.y - curve.a.y, curve.b.x - curve.a.x) * 180 / Math.PI;
+      addSvg("path", {
+        d: "M 15 0 L -9 -11 L -3 0 L -9 11 Z",
+        transform: `translate(${middle.x} ${middle.y}) rotate(${angle})`,
+        fill: color,
+        stroke: "#1d1a3b",
+        "stroke-width": 3,
+        "stroke-linejoin": "round",
+        "pointer-events": "none"
+      });
+    }
+
+    // =====================================================================
+    // LITTLE EFFECTS (dust, hearts, sparkles, poofs)
+    // These are drawn on a separate layer on top of the board. They never change the maze:
+    // each one is drawn, plays its movement once, and deletes itself.
+    // =====================================================================
+
+    // Play a movement on an element that already exists (like the Undo arrow).
+    function playOn(element, keyframes, timing) {
+      if (calmMotion || element === null) return;
+      element.animate(keyframes, timing);
+    }
+
+    // Draw a shape in the effects layer, move it once, then remove it.
+    function playOnce(name, attributes, keyframes, timing) {
+      if (calmMotion) return;
+      const element = addSvg(name, attributes, effects);
+      const movement = element.animate(keyframes, { fill: "both", easing: "ease-out", ...timing });
+      movement.onfinish = () => element.remove();
+    }
+
+    function between(low, high) {
+      return low + Math.random() * (high - low);
+    }
+
+    // What each piece does when it lands on a square.
+    function celebrate(piece, cell, isNew) {
+      const center = cellCenter(cell);
+      if (piece.type === "hearty" || piece.type === "treasure") dust({ x: center.x, y: center.y + 40 }, 230);
+      if (piece.type === "hearty" && isNew) hearts(center);
+      if (piece.type === "treasure" && isNew) sparkles(center);
+      if (piece.type === "hole") dirt(center);
+      if (piece.type === "portal") ripple(center, portalColor(piece.pair), 250);
+    }
+
+    // Little puffs of dust kicked up sideways when something lands.
+    function dust(point, delay = 0) {
+      for (let i = 0; i < 6; i += 1) {
+        const side = i % 2 === 0 ? -1 : 1;
+        playOnce("circle", { cx: point.x, cy: point.y, r: between(4, 7), class: "fx fx-dust" }, [
+          { transform: "translate(0px, 0px) scale(0.5)", opacity: 0.95 },
+          { transform: `translate(${side * between(20, 42)}px, ${-between(4, 16)}px) scale(1.4)`, opacity: 0 }
+        ], { duration: between(420, 600), delay });
+      }
+    }
+
+    // Two small hearts float up from Hearty. (Hearty... hearts.)
+    function hearts(center) {
+      [[-18, -34, 0], [16, -42, 180]].forEach(([dx, dy, wait]) => {
+        playOnce("use", { href: "#fx-heart", x: center.x + dx - 11, y: center.y + dy - 11, width: 22, height: 22, class: "fx" }, [
+          { transform: "translate(0px, 8px) scale(0.3)", opacity: 0 },
+          { transform: "translate(-3px, -8px) scale(1.15)", opacity: 1, offset: 0.3 },
+          { transform: "translate(5px, -38px) scale(0.85)", opacity: 0 }
+        ], { duration: 1000, delay: 260 + wait });
+      });
+    }
+
+    // Stars burst out of the treasure chest.
+    function sparkles(center) {
+      for (let i = 0; i < 6; i += 1) {
+        const angle = -Math.PI / 2 + (i - 2.5) * 0.55;
+        const distance = between(42, 60);
+        playOnce("use", { href: "#fx-star", x: center.x - 9, y: center.y - 19, width: 18, height: 18, class: "fx" }, [
+          { transform: "translate(0px, 0px) scale(0.2) rotate(0deg)", opacity: 0 },
+          { transform: `translate(${Math.cos(angle) * distance * 0.6}px, ${Math.sin(angle) * distance * 0.6}px) scale(1.2) rotate(60deg)`, opacity: 1, offset: 0.4 },
+          { transform: `translate(${Math.cos(angle) * distance}px, ${Math.sin(angle) * distance}px) scale(0.5) rotate(120deg)`, opacity: 0 }
+        ], { duration: 800, delay: 200 });
+      }
+    }
+
+    // Bits of dirt fly up and fall back when a hole is dug.
+    function dirt(center) {
+      for (let i = 0; i < 8; i += 1) {
+        const side = between(-1, 1);
+        playOnce("circle", { cx: center.x, cy: center.y, r: between(3, 5.5), class: "fx fx-dirt" }, [
+          { transform: "translate(0px, 0px)", opacity: 1 },
+          { transform: `translate(${side * 34}px, ${-between(26, 44)}px)`, opacity: 1, offset: 0.45 },
+          { transform: `translate(${side * 52}px, ${between(6, 18)}px)`, opacity: 0 }
+        ], { duration: between(520, 680), easing: "linear" });
+      }
+    }
+
+    // A ring that spreads out and fades, like a ripple in water.
+    function ripple(point, color, delay = 0) {
+      playOnce("circle", { cx: point.x, cy: point.y, r: 34, fill: "none", stroke: color, "stroke-width": 5, class: "fx" }, [
+        { transform: "scale(0.8)", opacity: 0.9 },
+        { transform: "scale(1.7)", opacity: 0 }
+      ], { duration: 560, delay });
+    }
+
+    // When two portals get linked, a spark zips along the link to show they are connected.
+    // For two-way portals it goes there and back.
+    function zap(fromCell, toCell, color) {
+      const curve = portalCurve(fromCell, toCell);
+      const steps = [];
+      for (let i = 0; i <= 16; i += 1) steps.push(pointOnCurve(curve, i / 16));
+      const route = PORTALS_WORK_BOTH_WAYS ? [...steps, ...steps.slice(0, -1).reverse()] : steps;
+      playOnce("circle", { cx: curve.a.x, cy: curve.a.y, r: 9, fill: color, stroke: "#fff", "stroke-width": 3, class: "fx" },
+        route.map((point) => ({ transform: `translate(${point.x - curve.a.x}px, ${point.y - curve.a.y}px)` })),
+        { duration: PORTALS_WORK_BOTH_WAYS ? 1200 : 650, easing: "ease-in-out", delay: 300 });
+      ripple(curve.b, color, PORTALS_WORK_BOTH_WAYS ? 900 : 950);
+      if (PORTALS_WORK_BOTH_WAYS) ripple(curve.a, color, 1500);
+    }
+
+    // A piece being removed puffs up, fades, and leaves a little cloud.
+    function poof(point, piece, delay = 0) {
+      const style = piece.type === "portal" ? `color: ${portalColor(piece.pair)}` : "";
+      playOnce("use", { href: `#${PIECE_LAYERS[piece.type][0].picture}`, x: point.x - 50, y: point.y - 50, width: 100, height: 100, class: "fx", style }, [
+        { transform: "scale(1)", opacity: 1 },
+        { transform: "scale(1.3)", opacity: 0 }
+      ], { duration: 240, delay });
+      for (let i = 0; i < 7; i += 1) {
+        const angle = (i / 7) * Math.PI * 2;
+        playOnce("circle", { cx: point.x, cy: point.y, r: between(9, 14), class: "fx fx-cloud" }, [
+          { transform: "translate(0px, 0px) scale(0.3)", opacity: 1 },
+          { transform: `translate(${Math.cos(angle) * 34}px, ${Math.sin(angle) * 26}px) scale(1)`, opacity: 1, offset: 0.5 },
+          { transform: `translate(${Math.cos(angle) * 44}px, ${Math.sin(angle) * 34 - 8}px) scale(0.4)`, opacity: 0 }
+        ], { duration: 520, delay: delay + 60 });
+      }
+    }
+
+    // A wall being knocked down drops, fades, and a few chunks fall off it.
+    function crumble(key, delay = 0) {
+      const line = lineForWall(key);
+      playOnce("line", { ...line, class: "fx wall-line" }, [
+        { transform: "translate(0px, 0px)", opacity: 1 },
+        { transform: "translate(0px, 12px)", opacity: 0 }
+      ], { duration: 300, delay });
+      for (let i = 0; i < 4; i += 1) {
+        const t = (i + 0.5) / 4;
+        const x = line.x1 + (line.x2 - line.x1) * t;
+        const y = line.y1 + (line.y2 - line.y1) * t;
+        playOnce("rect", { x: x - 4, y: y - 4, width: 8, height: 8, rx: 2, class: "fx fx-chunk" }, [
+          { transform: "translate(0px, 0px) rotate(0deg)", opacity: 1 },
+          { transform: `translate(${between(-16, 16)}px, ${between(34, 52)}px) rotate(${between(-180, 180)}deg)`, opacity: 0 }
+        ], { duration: 560, delay, easing: "cubic-bezier(0.5, 0, 0.9, 0.6)" });
+      }
+    }
+
+    // A dragged piece that couldn't be placed glides back to where it came from.
+    function flyBack(ghost, home) {
+      if (calmMotion) {
+        ghost.remove();
         return;
       }
-
-      const rowDistance = Math.abs(selectedCell.row - row);
-      const columnDistance = Math.abs(selectedCell.column - column);
-      if (rowDistance + columnDistance !== 1) {
-        selectedCell = { row, column };
-        message.textContent = "Those dots are not neighbors. This dot is your new starting point.";
-        drawGrid();
-        return;
-      }
-
-      const key = edgeKey(selectedCell.row, selectedCell.column, row, column);
-      if (walls.has(key)) {
-        message.textContent = "That wall is already there. Tap the wall itself to remove it.";
-      } else {
-        walls.add(key);
-        message.textContent = "Wall added. Choose a dot to start another wall.";
-      }
-      selectedCell = null;
-      drawGrid();
-      updateCount();
+      ghost.animate([
+        { left: ghost.style.left, top: ghost.style.top, opacity: 1 },
+        { left: `${home.x}px`, top: `${home.y}px`, opacity: 0.2 }
+      ], { duration: 300, easing: "cubic-bezier(0.3, 0.7, 0.4, 1)" }).onfinish = () => ghost.remove();
     }
 
-    function updateCount() {
-      wallCount.textContent = String(walls.size);
+    // =====================================================================
+    // THE SHELF AND HEARTY'S SPEECH BUBBLE
+    // =====================================================================
+
+    function updateShelf() {
+      for (const token of tokens) {
+        const type = token.dataset.type;
+        const info = token.querySelector(".token-info");
+        const badge = token.querySelector(".token-badge");
+        let infoText = { hearty: "Starts here", treasure: "The goal", hole: "Ends the attempt", portal: "Comes in pairs" }[type];
+        let urgent = false;
+        let badgeText = "";
+        let badgeDone = false;
+        let unavailable = false;
+        let isOut = false;
+
+        if (type === "hearty" || type === "treasure") {
+          if (findCell(type) !== null) {
+            infoText = "In the maze";
+            badgeText = "✓";
+            badgeDone = true;
+            isOut = true;
+          }
+        } else if (type === "hole") {
+          const holes = countOf("hole");
+          if (holes > 0) badgeText = String(holes);
+        } else if (type === "portal") {
+          const pairsUsed = new Set([...pieces.values()].filter((p) => p.type === "portal").map((p) => p.pair)).size;
+          if (pairsUsed > 0) badgeText = `${pairsUsed}/${MAX_PORTAL_PAIRS}`;
+          const spot = nextPortalSpot();
+          if (waitingPortalPair() !== -1) {
+            infoText = "Needs a partner";
+            urgent = true;
+          } else if (spot === null) {
+            infoText = "All pairs used";
+            unavailable = true;
+          }
+          // The shelf shows the color of the next portal you would place.
+          token.querySelector(".token-art svg").style.color = portalColor(spot === null ? 0 : spot.pair);
+        }
+
+        info.textContent = infoText;
+        info.classList.toggle("is-urgent", urgent);
+        // The badge gives a little hop whenever its number changes.
+        if (badgeText !== "" && badgeText !== badge.textContent) {
+          playOn(badge, [{ transform: "rotate(8deg) scale(0.4)" }, { transform: "rotate(-6deg) scale(1.25)" }, { transform: "rotate(8deg) scale(1)" }], { duration: 380, easing: "ease-out" });
+        }
+        badge.hidden = badgeText === "";
+        badge.textContent = badgeText;
+        badge.classList.toggle("is-done", badgeDone);
+        token.classList.toggle("is-out", isOut);
+        token.classList.toggle("is-held", holding !== null && holding.type === type && holding.from === null);
+        // aria-disabled (not "disabled") so a tap can still explain why it is unavailable.
+        token.setAttribute("aria-disabled", String(unavailable));
+        token.setAttribute("aria-label", `${titleOf(type)}: ${infoText}. Drag onto a square, or press Enter and choose a square.`);
+      }
+
+      // The chalk arrow from Hearty to the maze shows only until Hearty has been placed.
+      document.body.classList.toggle("show-start-arrow", findCell("hearty") === null && holding === null);
+
+      wallCount.textContent = walls.size === 0 ? "None yet" : walls.size === 1 ? "1 built" : `${walls.size} built`;
+      undoButton.disabled = history.length === 0;
+      clearWallsButton.disabled = walls.size === 0;
+      clearPiecesButton.disabled = pieces.size === 0;
     }
 
-    clearButton.addEventListener("click", () => {
-      walls.clear();
-      selectedCell = null;
-      message.textContent = "All inside walls cleared. The outside edge stays closed.";
-      drawGrid();
-      updateCount();
+    // The big line in the bubble: what to do next.
+    function nextStep() {
+      if (holding !== null) {
+        const { type, from } = holding;
+        if (from !== null) return type === "hearty" ? "Tap a square to move me there." : `Tap a square to move ${describe(pieces.get(from))}.`;
+        if (type === "portal") {
+          const waiting = waitingPortalPair();
+          return waiting === -1 ? "Tap a square for the portal." : `Now tap the square portal ${waiting + 1} takes me to.`;
+        }
+        return {
+          hearty: "Tap a square to put me there.",
+          treasure: "Tap a square to hide the treasure.",
+          hole: "Tap a square to dig a hole."
+        }[type];
+      }
+      if (selectedDot !== null) return "Now tap a glowing dot beside it to build a wall.";
+      if (findCell("hearty") === null) return "Drag me onto any square to start.";
+      if (findCell("treasure") === null) return "Now hide the treasure somewhere for me to find.";
+      const waiting = waitingPortalPair();
+      if (waiting !== -1) return `Portal ${waiting + 1} needs a partner. Drag in another portal.`;
+      if (walls.size === 0) return "Make it tricky: tap two dots side by side to build a wall.";
+      return "Looking good! Add holes or portals, or move things around.";
+    }
+
+    // The small line in the bubble: what just happened. It fades after a few seconds.
+    function note(text, isWarning = false) {
+      noteText = text;
+      noteIsWarning = isWarning;
+      clearTimeout(noteTimer);
+      if (text !== "") {
+        noteTimer = setTimeout(() => note(""), isWarning ? 6000 : 4000);
+      }
+      if (isWarning) {
+        // Hearty shakes the bubble so the warning gets noticed.
+        playOn(coachBubble, [{ transform: "translateX(0)" }, { transform: "translateX(-7px) rotate(-1deg)" }, { transform: "translateX(7px) rotate(1deg)" }, { transform: "translateX(0)" }], { duration: 280 });
+      }
+      updateCoach();
+    }
+
+    function updateCoach() {
+      const say = nextStep();
+      if (say !== lastSay && lastSay !== "") {
+        // Hearty bobs as if talking, and the bubble pops, whenever there is something new to say.
+        playOn(coachFace, [{ transform: "none" }, { transform: "translateY(-6px) rotate(-8deg)" }, { transform: "translateY(0) rotate(5deg)" }, { transform: "none" }], { duration: 460, easing: "ease-out" });
+        playOn(coachBubble, [{ transform: "scale(0.97)" }, { transform: "scale(1.015)" }, { transform: "scale(1)" }], { duration: 260, easing: "ease-out" });
+      }
+      lastSay = say;
+      coachSay.textContent = say;
+      coachNote.textContent = noteText;
+      coachNote.classList.toggle("is-warning", noteIsWarning);
+      coachRemove.hidden = holding === null || holding.from === null;
+      coachCancel.hidden = holding === null && selectedDot === null;
+      coachCancel.textContent = holding !== null && holding.type === "hole" && holding.from === null ? "Done" : "Cancel";
+    }
+
+    function refresh() {
+      drawBoard();
+      updateShelf();
+      updateCoach();
+    }
+
+    // =====================================================================
+    // LISTENING TO FINGERS, MICE AND KEYBOARDS
+    // A press starts when a finger touches down. If it moves a few pixels, it becomes a drag.
+    // If it lifts without moving, it is a tap.
+    // =====================================================================
+
+    function startPress(event, what) {
+      if (event.button !== 0) return;     // ignore right clicks
+      event.preventDefault();             // stop the browser selecting text or dragging images
+      if (press !== null && press.id === event.pointerId) {
+        // The same mouse pressed again without us hearing it let go: drop the old press.
+        if (press.drag) cancelDrag(press.drag);
+        press = null;
+      }
+      if (press !== null) return;         // ignore a second finger
+      press = { id: event.pointerId, startX: event.clientX, startY: event.clientY, what, drag: null, moved: false };
+      // Keep getting this finger's moves even when it slides off the element it started on.
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+
+    board.addEventListener("pointerdown", (event) => {
+      const thing = event.target.closest("[data-kind]");
+      startPress(event, thing === null ? { kind: "board" } : { ...thing.dataset });
     });
 
-    drawGrid();
-    updateCount();
+    for (const token of tokens) {
+      token.addEventListener("pointerdown", (event) => startPress(event, { kind: "token", type: token.dataset.type }));
+      // Keyboard Enter or Space on a piece picks it up. (Mouse and finger taps are handled above.)
+      token.addEventListener("click", (event) => {
+        if (event.detail !== 0) return;
+        tapToken(token.dataset.type);
+        if (holding !== null) board.querySelector(".cell.is-open")?.focus();
+      });
+    }
+
+    window.addEventListener("pointermove", (event) => {
+      if (press === null || event.pointerId !== press.id) return;
+      if (!press.moved) {
+        if (Math.hypot(event.clientX - press.startX, event.clientY - press.startY) < DRAG_START_DISTANCE) return;
+        press.moved = true;
+        press.drag = startDrag(press.what, event);
+      }
+      if (press.drag) moveDrag(press.drag, event);
+    });
+
+    window.addEventListener("pointerup", (event) => {
+      if (press === null || event.pointerId !== press.id) return;
+      const finished = press;
+      press = null;
+      const cell = cellAt(event.clientX, event.clientY);
+      const travel = Math.hypot(event.clientX - finished.startX, event.clientY - finished.startY);
+
+      // Fingers wobble. A drag that ends almost where it started (and built no walls) was meant as a tap.
+      if (finished.drag && travel < TAP_WOBBLE && !(finished.drag.kind === "wall" && finished.drag.built > 0)) {
+        cancelDrag(finished.drag);
+        handleTap(finished.what, cell);
+      } else if (finished.drag) {
+        finishDrag(finished.drag, event);
+      } else if (!finished.moved || travel < TAP_WOBBLE) {
+        handleTap(finished.what, cell);
+      }
+      // Anything else (a long slide that started on a wall, say) does nothing.
+    });
+
+    window.addEventListener("pointercancel", (event) => {
+      if (press === null || event.pointerId !== press.id) return;
+      if (press.drag) cancelDrag(press.drag);
+      press = null;
+    });
+
+    board.addEventListener("keydown", (event) => {
+      const thing = event.target.closest("[data-kind]");
+      if (thing === null) return;
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        handleTap({ ...thing.dataset }, thing.dataset.cell ?? null);
+        if (holding !== null) board.querySelector(".cell.is-open")?.focus();
+      } else if ((event.key === "Delete" || event.key === "Backspace") && thing.dataset.kind === "piece") {
+        event.preventDefault();
+        removePiece(thing.dataset.cell);
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        stopEverything();
+        note("");
+        refresh();
+      } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") {
+        event.preventDefault();
+        undo();
+      }
+    });
+
+    coachCancel.addEventListener("click", () => {
+      stopEverything();
+      note("");
+      refresh();
+    });
+
+    coachRemove.addEventListener("click", () => {
+      if (holding !== null && holding.from !== null) removePiece(holding.from);
+    });
+
+    undoButton.addEventListener("click", undo);
+
+    clearWallsButton.addEventListener("click", () => {
+      saveForUndo();
+      [...walls].forEach((key, index) => crumble(key, index * 35));
+      walls.clear();
+      stopEverything();
+      note("Walls cleared. Undo brings them back.");
+      refresh();
+    });
+
+    clearPiecesButton.addEventListener("click", () => {
+      saveForUndo();
+      [...pieces].forEach(([key, piece], index) => poof(cellCenter(key), piece, index * 60));
+      pieces.clear();
+      stopEverything();
+      note("Pieces cleared. Undo brings them back.");
+      refresh();
+    });
+
+    // =====================================================================
+    // START
+    // =====================================================================
+
+    // Line the speech bubble up with the edge of the maze floor.
+    document.documentElement.style.setProperty("--board-inset", `${MARGIN / BOARD_SIZE * 100}%`);
+    document.body.classList.toggle("no-idle", !IDLE_ANIMATIONS);
+    effects.setAttribute("viewBox", `0 0 ${BOARD_SIZE} ${BOARD_SIZE}`);
+    refresh();
   </script>
+
+  <!--
+    PICTURES
+    Each piece is drawn once here and reused everywhere (board, shelf, dragging).
+    Hearty is the fox drawing from images/Harty_iddle.png, shrunk and pasted in as text
+    so this file still works on its own, with no image files next to it.
+    Portals use "currentColor" so the same drawing can be blue or pink.
+    The sparkle and the swirl are separate pictures so they can move on their own.
+  -->
+  <svg class="sprites" aria-hidden="true" focusable="false">
+    <defs>
+      <!-- Roughens the edges of a line so it looks like chalk. -->
+      <filter id="chalk" x="-10%" y="-30%" width="120%" height="160%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" result="grain"/>
+        <feDisplacementMap in="SourceGraphic" in2="grain" scale="2.6"/>
+      </filter>
+
+      <image id="hearty-picture" width="145" height="220" href="data:image/png;base64,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"/>
+
+      <symbol id="piece-hearty" viewBox="0 0 100 100" overflow="visible">
+        <use href="#hearty-picture" transform="translate(21.7 3) scale(0.39)"/>
+      </symbol>
+
+      <symbol id="piece-treasure" viewBox="0 0 100 100" overflow="visible">
+        <path d="M19 47 V40 C19 27 31 21 50 21 C69 21 81 27 81 40 V47 Z" fill="#dd8b3c" stroke="#1d1a3b" stroke-width="4.5" stroke-linejoin="round"/>
+        <rect x="19" y="47" width="62" height="34" rx="4" fill="#b0602a" stroke="#1d1a3b" stroke-width="4.5" stroke-linejoin="round"/>
+        <path d="M22 66 H78" stroke="#1d1a3b" stroke-width="2.5" opacity="0.3"/>
+        <rect x="15" y="42" width="70" height="10" rx="3" fill="#ffc93c" stroke="#1d1a3b" stroke-width="3.5"/>
+        <rect x="42" y="40" width="16" height="20" rx="4" fill="#ffc93c" stroke="#1d1a3b" stroke-width="3.5"/>
+        <circle cx="50" cy="49" r="2.8" fill="#1d1a3b"/>
+        <path d="M50 49 V54" stroke="#1d1a3b" stroke-width="2.8" stroke-linecap="round"/>
+      </symbol>
+
+      <symbol id="treasure-sparkle" viewBox="0 0 100 100" overflow="visible">
+        <path d="M79 10 l2.6 6.4 6.4 2.6 -6.4 2.6 -2.6 6.4 -2.6 -6.4 -6.4 -2.6 6.4 -2.6 z" fill="#fff3bf" stroke="#1d1a3b" stroke-width="2.5" stroke-linejoin="round"/>
+      </symbol>
+
+      <symbol id="piece-hole" viewBox="0 0 100 100" overflow="visible">
+        <ellipse cx="50" cy="56" rx="41" ry="31" fill="#9c7a55" stroke="#1d1a3b" stroke-width="4.5"/>
+        <ellipse cx="50" cy="58" rx="30" ry="21" fill="#1d1a3b"/>
+        <path d="M20 58 A30 21 0 0 1 80 58 C70 50 30 50 20 58 Z" fill="#433d73"/>
+        <circle cx="19" cy="39" r="4.5" fill="#c9a77e" stroke="#1d1a3b" stroke-width="2.5"/>
+        <circle cx="82" cy="73" r="3.6" fill="#c9a77e" stroke="#1d1a3b" stroke-width="2.5"/>
+        <circle cx="74" cy="31" r="2.8" fill="#c9a77e" stroke="#1d1a3b" stroke-width="2.2"/>
+      </symbol>
+
+      <symbol id="piece-portal" viewBox="0 0 100 100" overflow="visible">
+        <circle cx="50" cy="50" r="40" fill="#e9ebf7" stroke="#1d1a3b" stroke-width="4.5"/>
+        <rect x="43" y="6" width="14" height="9" rx="3" fill="currentColor" stroke="#1d1a3b" stroke-width="2.5"/>
+        <rect x="43" y="85" width="14" height="9" rx="3" fill="currentColor" stroke="#1d1a3b" stroke-width="2.5"/>
+        <circle cx="50" cy="50" r="30" fill="currentColor" stroke="#1d1a3b" stroke-width="3.5"/>
+      </symbol>
+
+      <symbol id="portal-swirl" viewBox="0 0 100 100" overflow="visible">
+        <path d="M46 50 a4 4 0 0 1 8 0 a8 8 0 0 1 -16 0 a12 12 0 0 1 24 0 a16 16 0 0 1 -32 0 a20 20 0 0 1 40 0" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" opacity="0.9"/>
+        <circle cx="50" cy="50" r="4" fill="#1d1a3b" opacity="0.6"/>
+      </symbol>
+
+      <!-- Small pictures used by the effects. -->
+      <symbol id="fx-heart" viewBox="0 0 24 24" overflow="visible">
+        <path d="M12 21 C 5 15.5, 2 12, 2 8.2 A 4.8 4.8 0 0 1 12 6 A 4.8 4.8 0 0 1 22 8.2 C 22 12, 19 15.5, 12 21 Z" fill="#ff5c7c" stroke="#1d1a3b" stroke-width="2" stroke-linejoin="round"/>
+      </symbol>
+
+      <symbol id="fx-star" viewBox="0 0 24 24" overflow="visible">
+        <path d="M12 1.5 l3 7.5 7.5 3 -7.5 3 -3 7.5 -3 -7.5 -7.5 -3 7.5 -3 z" fill="#ffd54f" stroke="#1d1a3b" stroke-width="2" stroke-linejoin="round"/>
+      </symbol>
+    </defs>
+  </svg>
 </body>
 </html>
