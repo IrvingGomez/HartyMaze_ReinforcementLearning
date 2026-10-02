@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hearty's Maze Builder</title>
+  <style>
+    :root {
+      --ink: #21352c;
+      --muted: #5a6c62;
+      --paper: #fbf8ef;
+      --board: #fffdf7;
+      --green: #27765a;
+      --green-dark: #1a513e;
+      --yellow: #f3c84b;
+      --line: #c9d4c8;
+      --wall: #283a30;
+      --focus: #d66a3a;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background-color: var(--paper);
+      background-image: radial-gradient(#dfddcf 0.7px, transparent 0.7px);
+      background-size: 18px 18px;
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+    }
+
+    main {
+      width: min(100% - 32px, 820px);
+      margin: 0 auto;
+      padding: 28px 0 36px;
+    }
+
+    .topline {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+      color: var(--green-dark);
+      font-size: 0.82rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .spark {
+      width: 12px;
+      height: 12px;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      background: var(--yellow);
+      box-shadow: 0 0 0 4px #f3c84b44;
+    }
+
+    h1 {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(2rem, 8vw, 3.4rem);
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    .intro {
+      margin: 12px 0 22px;
+      max-width: 600px;
+      color: var(--muted);
+      font-size: 1.08rem;
+      line-height: 1.5;
+    }
+
+    .workbench {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 230px;
+      align-items: start;
+      gap: 24px;
+    }
+
+    .board-wrap {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid var(--ink);
+      border-radius: 8px;
+      background: var(--board);
+      box-shadow: 5px 5px 0 var(--yellow);
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      overflow: visible;
+      touch-action: manipulation;
+      user-select: none;
+    }
+
+    .outer-border {
+      fill: none;
+      stroke: var(--wall);
+      stroke-width: 10;
+      stroke-linecap: square;
+      pointer-events: none;
+    }
+
+    .grid-guide {
+      stroke: var(--line);
+      stroke-width: 2;
+      stroke-dasharray: 3 8;
+      pointer-events: none;
+    }
+
+    .wall-hit-area {
+      stroke: transparent;
+      stroke-width: 30;
+      stroke-linecap: round;
+      cursor: pointer;
+      pointer-events: stroke;
+    }
+
+    .wall-visible {
+      stroke: var(--wall);
+      stroke-width: 10;
+      stroke-linecap: round;
+      pointer-events: none;
+    }
+
+    .dot-hit-area {
+      fill: transparent;
+      cursor: pointer;
+    }
+
+    .dot {
+      fill: var(--green);
+      stroke: var(--board);
+      stroke-width: 4;
+      pointer-events: none;
+    }
+
+    .dot-group { outline: none; }
+    .dot-group:focus .dot-hit-area { stroke: var(--focus); stroke-width: 4; }
+    .dot-group.selected .dot { fill: var(--focus); }
+
+    .instructions {
+      padding-top: 5px;
+    }
+
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 17px;
+      color: var(--muted);
+      font-size: 0.98rem;
+      line-height: 1.45;
+    }
+
+    .step-number {
+      display: grid;
+      width: 28px;
+      height: 28px;
+      flex: 0 0 28px;
+      place-items: center;
+      border-radius: 50%;
+      color: var(--ink);
+      background: var(--yellow);
+      font-weight: 800;
+    }
+
+    .count {
+      margin: 24px 0 16px;
+      padding-top: 15px;
+      border-top: 1px solid var(--line);
+      color: var(--ink);
+      font-size: 1rem;
+      font-weight: 800;
+    }
+
+    .count span { color: var(--green-dark); }
+
+    button {
+      min-height: 48px;
+      padding: 10px 14px;
+      border: 2px solid var(--green-dark);
+      border-radius: 6px;
+      color: white;
+      background: var(--green-dark);
+      font: inherit;
+      font-size: 0.98rem;
+      font-weight: 800;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    button:hover { background: var(--green); }
+    button:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+
+    .message {
+      min-height: 48px;
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+
+    @media (max-width: 650px) {
+      main { width: min(100% - 24px, 500px); padding-top: 22px; }
+      .workbench { grid-template-columns: 1fr; gap: 22px; }
+      .board-wrap { padding: 8px; }
+      .instructions { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
+      .count, button, .message { grid-column: 1 / -1; }
+      .count { margin-top: 7px; }
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      main { animation: arrive 350ms ease-out both; }
+      @keyframes arrive {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="topline"><span class="spark" aria-hidden="true"></span>Maze workshop · Stage 1</div>
+    <h1>Hearty's Maze</h1>
+    <p class="intro">Build the paths by adding walls between neighboring dots. The outside edge is already closed in.</p>
+
+    <section class="workbench" aria-label="Maze builder">
+      <div class="board-wrap">
+        <svg id="maze" role="group" aria-label="Maze grid. Choose two neighboring dots to add a wall, or choose a wall to remove it."></svg>
+      </div>
+
+      <aside class="instructions" aria-label="How to build">
+        <div class="step"><span class="step-number">1</span><span>Choose a dot to start a wall.</span></div>
+        <div class="step"><span class="step-number">2</span><span>Choose a neighboring dot to draw the wall.</span></div>
+        <div class="step"><span class="step-number">3</span><span>Tap a wall to remove it again.</span></div>
+        <p class="count" aria-live="polite">Walls added: <span id="wall-count">0</span></p>
+        <button id="clear-walls" type="button">Clear all walls</button>
+        <p id="message" class="message" aria-live="polite">Choose any dot to begin.</p>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    // RULES YOU CAN CHANGE
+    // Change the grid size here. The grid is always square in this version.
+    // ASSUMPTION: Each dot marks a cell's center; a wall connects neighboring cells.
+    const GRID_SIZE = 5;
+
+    // Drawing measurements keep dots and wall hit areas easy to tap.
+    const CELL_GAP = 100;
+    const GRID_PADDING = 70;
+    const VIEW_SIZE = GRID_PADDING * 2 + CELL_GAP * (GRID_SIZE - 1);
+
+    const maze = document.querySelector("#maze");
+    const wallCount = document.querySelector("#wall-count");
+    const message = document.querySelector("#message");
+    const clearButton = document.querySelector("#clear-walls");
+
+    // Each key names one shared edge between two neighboring cells.
+    // The order is always top-to-bottom or left-to-right, so an edge has one key.
+    const walls = new Set();
+    let selectedCell = null;
+
+    function cellKey(row, column) {
+      return `${row},${column}`;
+    }
+
+    function edgeKey(rowA, columnA, rowB, columnB) {
+      if (rowA > rowB || columnA > columnB) {
+        [rowA, rowB] = [rowB, rowA];
+        [columnA, columnB] = [columnB, columnA];
+      }
+      return `${rowA},${columnA}|${rowB},${columnB}`;
+    }
+
+    function pointFor(row, column) {
+      return {
+        x: GRID_PADDING + column * CELL_GAP,
+        y: GRID_PADDING + row * CELL_GAP
+      };
+    }
+
+    function addSvgElement(name, attributes, parent = maze) {
+      const element = document.createElementNS("http://www.w3.org/2000/svg", name);
+      for (const [key, value] of Object.entries(attributes)) {
+        element.setAttribute(key, value);
+      }
+      parent.append(element);
+      return element;
+    }
+
+    function drawGrid() {
+      maze.replaceChildren();
+      maze.setAttribute("viewBox", `0 0 ${VIEW_SIZE} ${VIEW_SIZE}`);
+      maze.setAttribute("aria-label", `${GRID_SIZE} by ${GRID_SIZE} maze grid. Choose two neighboring dots to add a wall, or choose a wall to remove it.`);
+
+      // Light guide lines show the cells; these are not walls.
+      for (let index = 0; index < GRID_SIZE; index += 1) {
+        const position = GRID_PADDING + index * CELL_GAP;
+        addSvgElement("line", {
+          x1: GRID_PADDING, y1: position,
+          x2: GRID_PADDING + (GRID_SIZE - 1) * CELL_GAP, y2: position,
+          class: "grid-guide"
+        });
+        addSvgElement("line", {
+          x1: position, y1: GRID_PADDING,
+          x2: position, y2: GRID_PADDING + (GRID_SIZE - 1) * CELL_GAP,
+          class: "grid-guide"
+        });
+      }
+
+      // The border is drawn around the board and does not need wall data.
+      const outside = GRID_PADDING - CELL_GAP / 2;
+      const inside = GRID_PADDING + (GRID_SIZE - 1) * CELL_GAP + CELL_GAP / 2;
+      addSvgElement("rect", {
+        x: outside, y: outside,
+        width: inside - outside, height: inside - outside,
+        class: "outer-border"
+      });
+
+      // Draw each saved wall with a wide invisible stroke for easy tapping.
+      for (const key of walls) {
+        const [first, second] = key.split("|");
+        const [rowA, columnA] = first.split(",").map(Number);
+        const [rowB, columnB] = second.split(",").map(Number);
+        const start = pointFor(rowA, columnA);
+        const end = pointFor(rowB, columnB);
+        const wallGroup = addSvgElement("g", { role: "button", tabindex: "0", "aria-label": "Remove wall" });
+        const hitArea = addSvgElement("line", {
+          x1: start.x, y1: start.y, x2: end.x, y2: end.y,
+          class: "wall-hit-area"
+        }, wallGroup);
+        addSvgElement("line", {
+          x1: start.x, y1: start.y, x2: end.x, y2: end.y,
+          class: "wall-visible"
+        }, wallGroup);
+        hitArea.addEventListener("click", (event) => {
+          event.stopPropagation();
+          walls.delete(key);
+          selectedCell = null;
+          message.textContent = "Wall removed. Choose a dot to add another.";
+          drawGrid();
+          updateCount();
+        });
+        wallGroup.addEventListener("keydown", (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            walls.delete(key);
+            selectedCell = null;
+            message.textContent = "Wall removed. Choose a dot to add another.";
+            drawGrid();
+            updateCount();
+          }
+        });
+      }
+
+      // A dot represents a cell. Selecting two neighbors toggles their shared edge.
+      for (let row = 0; row < GRID_SIZE; row += 1) {
+        for (let column = 0; column < GRID_SIZE; column += 1) {
+          const point = pointFor(row, column);
+          const dotGroup = addSvgElement("g", {
+            class: `dot-group${selectedCell === cellKey(row, column) ? " selected" : ""}`,
+            role: "button",
+            tabindex: "0",
+            "aria-label": `Row ${row + 1}, column ${column + 1}`
+          });
+          const hitArea = addSvgElement("circle", {
+            cx: point.x, cy: point.y, r: 28, class: "dot-hit-area"
+          }, dotGroup);
+          addSvgElement("circle", { cx: point.x, cy: point.y, r: 11, class: "dot" }, dotGroup);
+          hitArea.addEventListener("click", () => chooseCell(row, column));
+          dotGroup.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              chooseCell(row, column);
+            }
+          });
+        }
+      }
+    }
+
+    function chooseCell(row, column) {
+      if (selectedCell === null) {
+        selectedCell = { row, column };
+        message.textContent = "Now choose a dot directly beside it.";
+        drawGrid();
+        return;
+      }
+
+      const rowDistance = Math.abs(selectedCell.row - row);
+      const columnDistance = Math.abs(selectedCell.column - column);
+      if (rowDistance + columnDistance !== 1) {
+        selectedCell = { row, column };
+        message.textContent = "Those dots are not neighbors. This dot is your new starting point.";
+        drawGrid();
+        return;
+      }
+
+      const key = edgeKey(selectedCell.row, selectedCell.column, row, column);
+      if (walls.has(key)) {
+        message.textContent = "That wall is already there. Tap the wall itself to remove it.";
+      } else {
+        walls.add(key);
+        message.textContent = "Wall added. Choose a dot to start another wall.";
+      }
+      selectedCell = null;
+      drawGrid();
+      updateCount();
+    }
+
+    function updateCount() {
+      wallCount.textContent = String(walls.size);
+    }
+
+    clearButton.addEventListener("click", () => {
+      walls.clear();
+      selectedCell = null;
+      message.textContent = "All inside walls cleared. The outside edge stays closed.";
+      drawGrid();
+      updateCount();
+    });
+
+    drawGrid();
+    updateCount();
+  </script>
+</body>
+</html>
