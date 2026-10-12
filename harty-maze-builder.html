@@ -1,4 +1,14 @@
 <!doctype html>
+<!--
+  HARTY'S MAZE
+  A maze builder for teaching reinforcement learning. Students build a maze, then watch
+  Harty learn his way through it with policy iteration, the same method as
+  src/policy_iteration.py and the HartyMazeSolver notebook.
+
+  One file, no installs and no internet needed: open it by double-clicking.
+  Everything you might want to change is at the top of the <script> section, in the blocks
+  of rules. Search for ASSUMPTION to find every rule that had to be guessed.
+-->
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -28,6 +38,7 @@
       --art: 86px;               /* size of a piece on the shelf */
       --board-inset: 7%;         /* set from the script so the bubble lines up with the maze */
       --map-size: 196px;         /* Harty's plan map in the side panel */
+      --chalk-dust: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0.09 0 0 0 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E");
     }
 
     * { box-sizing: border-box; }
@@ -45,7 +56,7 @@
       background-image:
         radial-gradient(ellipse 45% 35% at 12% 18%, rgba(255, 255, 255, 0.045), transparent 70%),
         radial-gradient(ellipse 40% 30% at 86% 82%, rgba(255, 255, 255, 0.035), transparent 70%),
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0.09 0 0 0 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E");
+        var(--chalk-dust);
       /* Stop long presses from selecting text or opening menus on tablets. */
       -webkit-user-select: none;
       user-select: none;
@@ -447,8 +458,6 @@
       opacity: 0.45;
     }
 
-    .tools h2 small { color: var(--chalk-dim); font-family: var(--font-body); font-size: 0.85rem; font-weight: 600; }
-
     .shelves { display: grid; gap: 14px; }
 
     /* A shelf is a row of pieces standing on a wooden plank. */
@@ -721,6 +730,155 @@
 
     .sprites { position: absolute; width: 0; height: 0; overflow: hidden; }
 
+    /* "How to play", under the title. */
+    .link-btn {
+      margin: -8px 0;
+      padding: 8px 2px;
+      border: 0;
+      background: none;
+      color: var(--sun);
+      font: inherit;
+      font-weight: 700;
+      text-decoration: underline;
+      text-decoration-thickness: 2px;
+      text-underline-offset: 3px;
+      cursor: pointer;
+    }
+    .link-btn:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; border-radius: 4px; }
+
+    /* ===== How to play: a small framed chalkboard in front of the page ===== */
+    .how-to {
+      width: min(760px, 94vw);
+      max-width: none;
+      max-height: 94vh;
+      padding: 0;
+      border: 0;
+      background: none;
+      color: var(--chalk);
+      overflow: visible;
+    }
+    .how-to::backdrop { background: rgba(8, 16, 24, 0.62); }
+    .how-to[open] { animation: rise-in 380ms cubic-bezier(0.2, 0.9, 0.3, 1.15); }
+    .how-to-board {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      max-height: calc(94vh - 8px);
+      padding: 24px 34px 16px;
+      border: 12px solid var(--wood);
+      border-radius: 12px;
+      background-color: var(--slate);
+      background-image: var(--chalk-dust);
+      /* An ink line on each side of the wooden frame, like the rest of the drawings. */
+      box-shadow: inset 0 0 0 3px var(--ink), 0 0 0 3px var(--ink), 0 24px 60px rgba(0, 0, 0, 0.5);
+      font-size: 1.02rem;
+      line-height: 1.45;
+    }
+    /* Sideways swipes turn the page instead of being taken by the browser. (A page can scroll,
+       so it needs this too: the browser stops looking at outer boxes once it finds a scroller.) */
+    .how-to-board,
+    .how-to-page { touch-action: pan-y; }
+    .how-to-page { overflow-y: auto; }
+    .how-to-page.is-showing { animation: rise-in 300ms ease-out; }
+    .how-to-art { display: block; width: min(100%, 420px); height: auto; margin: 0 auto 6px; overflow: visible; }
+    .how-to-art text { fill: var(--chalk); font: 800 17px var(--font-display); text-anchor: middle; }
+    .how-to-step-marks circle { fill: var(--sun); stroke: var(--ink); stroke-width: 3; }
+    .how-to-art .how-to-step-marks text { fill: var(--ink); }
+    .how-to-page h2 { margin: 4px 0 10px; font: 800 1.75rem/1.15 var(--font-display); }
+    .how-to-page p { margin: 0 0 10px; max-width: 62ch; }
+    .term { color: var(--sun); font-weight: 700; }
+    .how-to-list [data-walls] { display: block; }       /* one line for each wall builder */
+    .how-to-list [data-walls][hidden] { display: none; }
+    .builder-name { font-weight: 700; }
+    .inline-icon {
+      width: 1.6em;
+      height: 1.6em;
+      margin: -0.3em 0;
+      padding: 0.2em;
+      border: 2px solid var(--chalk-dim);
+      border-radius: 50%;
+      vertical-align: middle;
+    }
+    .how-to-list,
+    .how-to-steps { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+    .how-to-list li { position: relative; padding-left: 26px; }
+    .how-to-list li::before {
+      content: "";
+      position: absolute;
+      left: 4px;
+      top: 0.5em;
+      width: 10px;
+      height: 10px;
+      border: 2.5px solid var(--sun);
+      border-radius: 50%;
+    }
+    .how-to-steps { counter-reset: step; }
+    .how-to-steps li { position: relative; padding-left: 40px; counter-increment: step; }
+    .how-to-steps li::before {
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: 0;
+      display: grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      border: 2.5px solid var(--ink);
+      border-radius: 50%;
+      background: var(--sun);
+      color: var(--ink);
+      font: 800 0.85rem var(--font-display);
+    }
+    .how-to-page .how-to-tip { margin-top: 14px; color: var(--chalk-dim); font-size: 0.92rem; }
+    .how-to-words { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 30px; margin: 0; }
+    .how-to-words dt { color: var(--sun); font: 800 1rem var(--font-display); }
+    .how-to-words dd { margin: 0; color: var(--chalk-dim); font-size: 0.95rem; line-height: 1.35; }
+    .how-to-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 2px dashed rgba(159, 179, 191, 0.3);
+    }
+    .how-to-nav .text-btn { color: var(--chalk); }
+    .how-to-dots { display: flex; gap: 2px; }
+    .how-to-dot { width: 28px; height: 28px; padding: 8px; border: 0; background: none; cursor: pointer; }
+    .how-to-dot::before { content: ""; display: block; width: 12px; height: 12px; border: 2px solid var(--chalk-dim); border-radius: 50%; }
+    .how-to-dot[aria-current="step"]::before { border-color: var(--ink); background: var(--sun); }
+    .how-to-next {
+      min-height: 48px;
+      padding: 0 26px;
+      border: 3px solid var(--ink);
+      border-radius: 999px;
+      background: var(--harty);
+      color: #fff;
+      box-shadow: 0 4px 0 var(--slate-deep);
+      font: 800 1.05rem var(--font-display);
+      cursor: pointer;
+    }
+    .how-to-next:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--slate-deep); }
+    .how-to-close {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      display: grid;
+      place-items: center;
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      border: 2.5px solid var(--chalk-dim);
+      border-radius: 50%;
+      background: none;
+      color: var(--chalk);
+      cursor: pointer;
+    }
+    .how-to-close svg { width: 18px; height: 18px; }
+    .how-to-next:focus-visible,
+    .how-to-dot:focus-visible,
+    .how-to-close:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
+
     /* ===== While Harty runs ===== */
     .run-panel { display: none; }
     .is-running .run-panel { display: block; animation: rise-in 350ms ease-out; }
@@ -962,7 +1120,16 @@
       }
     }
 
+    @media (max-height: 560px) {
+      .how-to-board { padding: 14px 26px 10px; }
+      .how-to-art { max-height: 80px; }
+      .how-to-page h2 { font-size: 1.4rem; }
+      .how-to-nav { margin-top: 8px; padding-top: 8px; }
+    }
     @media (max-width: 520px) {
+      .how-to-board { padding: 54px 18px 12px; border-width: 9px; }   /* room for the close button above the pictures */
+      .how-to-page h2 { font-size: 1.4rem; }
+      .how-to-words { grid-template-columns: 1fr; }
       :root { --top-row: 136px; --art: 80px; }
       .app { padding: 12px; }
       .coach { gap: 10px; margin-inline: 0; }
@@ -985,7 +1152,7 @@
       <div class="brand-text">
         <h1>Harty's Maze</h1>
         <svg class="swoosh" viewBox="0 0 200 14" aria-hidden="true"><path d="M3 10 C 48 2, 120 1, 197 7" filter="url(#chalk)"/></svg>
-        <p>Build a maze. Harty learns it.</p>
+        <p>Build a maze. Harty learns it. <button id="how-to-open" class="link-btn" type="button">How to play</button></p>
       </div>
       <!-- Run, Stop or Again, depending on what is happening. -->
       <button id="run" class="run-btn" type="button">
@@ -1128,7 +1295,7 @@
         <h2><span>Harty's policy</span><span class="rule"></span></h2>
         <!-- The plan as Harty sees it: his move in every square, on a color for its score. -->
         <div class="plan-view">
-          <svg id="plan-map" class="plan-map" role="img" aria-label="Harty's plan"></svg>
+          <svg id="plan-map" class="plan-map" role="img" aria-label="Harty's policy"></svg>
           <div class="plan-legend">
             <div class="legend-row"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#plan-arrow"></use></svg><span>My action in each state</span></div>
             <div>Value</div>
@@ -1176,7 +1343,115 @@
     </aside>
   </div>
 
+  <!-- HOW TO PLAY: a short guide for students, as a small framed chalkboard in front of the page.
+       It opens when the page loads (SHOW_HOW_TO_AT_START) and from "How to play" under the title.
+       The script fills in the parts that depend on the rules (rewards, move limit, discount). -->
+  <dialog id="how-to" class="how-to" aria-label="How to play">
+    <div class="how-to-board">
+      <button id="how-to-close" class="how-to-close" type="button" aria-label="Close the guide">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+      </button>
+
+      <section class="how-to-page">
+        <svg class="how-to-art" viewBox="0 0 420 150" aria-hidden="true">
+          <use href="#piece-harty" x="10" y="10" width="130" height="130"></use>
+          <path d="M122 96 C 180 24, 250 150, 300 82" filter="url(#chalk)" fill="none" stroke="#f2f0e6" stroke-width="4" stroke-linecap="round" stroke-dasharray="1 12"/>
+          <text x="214" y="66">?</text>
+          <use href="#piece-treasure" x="290" y="22" width="120" height="120"></use>
+          <use href="#treasure-sparkle" x="290" y="22" width="120" height="120"></use>
+        </svg>
+        <h2>Help Harty find the treasure</h2>
+        <p>You build a maze. Harty learns his way through it by trying moves and getting rewards: the treasure is good, holes are bad.</p>
+        <p>Computers learn to play games and steer robots the same way. It's called <span class="term">reinforcement learning</span>.</p>
+      </section>
+
+      <section class="how-to-page" hidden>
+        <svg class="how-to-art" viewBox="0 0 420 118" aria-hidden="true">
+          <use href="#piece-harty" x="12" y="0" width="86" height="86"></use>
+          <use href="#piece-treasure" x="117" y="0" width="86" height="86"></use>
+          <use href="#treasure-sparkle" x="117" y="0" width="86" height="86"></use>
+          <use href="#piece-hole" x="222" y="0" width="86" height="86"></use>
+          <g style="color: #2f7cf6"><use href="#piece-portal" x="327" y="0" width="86" height="86"></use><use href="#portal-swirl" x="327" y="0" width="86" height="86"></use></g>
+          <text x="55" y="110">Harty</text>
+          <text x="160" y="110">Treasure</text>
+          <text x="265" y="110">Hole</text>
+          <text x="370" y="110">Portal</text>
+        </svg>
+        <h2>Build a maze</h2>
+        <ul class="how-to-list">
+          <li><strong>Drag</strong> Harty and the treasure onto the maze, or tap a piece and then tap a square.</li>
+          <li><strong>Holes</strong> end Harty's try. <strong>Portals</strong> come in pairs: step into one, pop out of the other.</li>
+          <li>
+            <strong>Walls</strong> go between the dots.
+            <span data-walls="draw"><span class="builder-name">Draw walls:</span> Tap a dot, then the dot next to it.</span>
+            <span data-walls="shapes"><span class="builder-name">Wall shapes:</span> Drag a shape onto the maze.
+              <svg class="inline-icon" viewBox="0 0 24 24" role="img" aria-label="The turn button"><use href="#icon-again"></use></svg> turns the shapes.</span>
+          </li>
+          <li><strong>Mistakes</strong> are fine. Undo takes back a step. To remove something, drag a piece off the maze or tap a wall.</li>
+          <li><strong>No time?</strong> Press Example maze for a ready-made one.</li>
+        </ul>
+      </section>
+
+      <section class="how-to-page" hidden>
+        <svg class="how-to-art" viewBox="0 0 420 112" aria-hidden="true">
+          <circle cx="50" cy="48" r="38" fill="#f2661c" stroke="#1d1a3b" stroke-width="4"/>
+          <use href="#icon-run" x="32" y="30" width="38" height="38" style="color: #fff"></use>
+          <path d="M100 48 H 128 M120 40 L 129 48 L 120 56" filter="url(#chalk)" fill="none" stroke="#f2f0e6" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M184 48 H 238 M282 48 H 336" fill="none" stroke="#9fb3bf" stroke-width="3" stroke-dasharray="5 6"/>
+          <g class="how-to-step-marks">
+            <circle cx="164" cy="48" r="20"/><circle cx="260" cy="48" r="20"/><circle cx="356" cy="48" r="20"/>
+            <text x="164" y="54">1</text><text x="260" y="54">2</text><text x="356" y="54">3</text>
+          </g>
+          <text x="164" y="102">Explore</text><text x="260" y="102">Learn</text><text x="356" y="102">Best policy</text>
+        </svg>
+        <h2>Press Run and watch him learn</h2>
+        <ol class="how-to-steps">
+          <li><strong>Explore.</strong> Harty makes <span data-fill="tries">3</span> tries with random moves. Each try is an <span class="term">episode</span>. It ends at the treasure, in a hole, or after <span data-fill="moves">50</span> moves.</li>
+          <li><strong>Learn.</strong> He makes a <span class="term">policy</span>: one move for every square. He scores it, improves it, and repeats until it stops changing. The arrows under Harty's policy show it.</li>
+          <li><strong>Best policy.</strong> He follows his best policy to the treasure.</li>
+        </ol>
+        <p class="how-to-tip">1×, 2× and 4× change the speed. Stop takes you back to building.</p>
+      </section>
+
+      <section class="how-to-page" hidden>
+        <h2>Words to know</h2>
+        <dl class="how-to-words">
+          <div><dt>Agent</dt><dd>Harty, the one who learns.</dd></div>
+          <div><dt>Environment</dt><dd>The maze.</dd></div>
+          <div><dt>State</dt><dd>The square Harty is on.</dd></div>
+          <div><dt>Action</dt><dd>A move: up, down, left or right.</dd></div>
+          <div><dt>Reward</dt><dd><span data-fill="reward"></span></dd></div>
+          <div><dt>Episode</dt><dd>One try, from the start until it ends.</dd></div>
+          <div><dt>Return</dt><dd>All the rewards of one episode, added up.</dd></div>
+          <div><dt>Policy</dt><dd>Harty's plan: an action for every state.</dd></div>
+          <div><dt>Value</dt><dd>How much reward Harty can expect from a state if he follows his policy.</dd></div>
+          <div><dt>Discount</dt><dd>A reward one move further away counts <span data-fill="discount">0.9</span> times as much.</dd></div>
+        </dl>
+      </section>
+
+      <nav class="how-to-nav" aria-label="Guide pages">
+        <button id="how-to-back" class="text-btn" type="button">Back</button>
+        <div id="how-to-dots" class="how-to-dots"></div>
+        <button id="how-to-next" class="how-to-next" type="button">Next</button>
+      </nav>
+    </div>
+  </dialog>
+
   <script>
+    // WHAT'S IN THIS SCRIPT, IN ORDER
+    //   Rules you can change: grid size, the how-to guide, portals, animations, rewards,
+    //     discount, move limit, pace, wall builders, and the example mazes
+    //   Drawing sizes, the maze data (walls and pieces), and what the student is doing
+    //   Small helpers, then changing the maze: placing, moving, removing, Undo, size, examples
+    //   Building walls with dots, and with wall shapes
+    //   Taps and drags, and drawing the board (redrawn from the maze data after every change)
+    //   Little effects, the shelf, and Harty's speech bubble
+    //   Listening to fingers, mice and keyboards
+    //   The learning engine (policy iteration, matching src/policy_iteration.py)
+    //   Running: the story the Run button plays, and Harty's policy map
+    //   How to play: the guide for students
+    //   Start: what happens when the page opens
+
     // =====================================================================
     // RULES YOU CAN CHANGE
     // =====================================================================
@@ -1186,6 +1461,10 @@
     const GRID_SIZE = 5;
     const SMALLEST_SIZE = 4;
     const BIGGEST_SIZE = 8;
+
+    // Show the "How to play" guide when the page opens. Students can always open it again
+    // from "How to play" under the title.
+    const SHOW_HOW_TO_AT_START = true;
 
     // Open the page with the example maze already built (handy while testing).
     // Leave it false for students, so they start with an empty maze.
@@ -1460,6 +1739,10 @@
     const builderTabs = [...document.querySelectorAll(".builder-tab")];
     const shapePalette = document.querySelector("#shape-palette");
     const turnButton = document.querySelector("#turn-shapes");
+    const howTo = document.querySelector("#how-to");
+    const howToPages = [...howTo.querySelectorAll(".how-to-page")];
+    const howToBack = document.querySelector("#how-to-back");
+    const howToNext = document.querySelector("#how-to-next");
     const boardWrap = document.querySelector("#board-wrap");
     const runButton = document.querySelector("#run");
     const runIcon = document.querySelector("#run-icon");
@@ -1507,12 +1790,6 @@
       const b = readKey(cellB);
       const aComesFirst = a.row < b.row || (a.row === b.row && a.column < b.column);
       return aComesFirst ? `${cellA}|${cellB}` : `${cellB}|${cellA}`;
-    }
-
-    // Is there a wall between these two cells? The order you ask in does not matter.
-    // The learning engine in Stage 3 will use this to decide if a move is blocked.
-    function hasWallBetween(cellA, cellB) {
-      return walls.has(wallKey(cellA, cellB));
     }
 
     function areNeighbors(dotA, dotB) {
@@ -3065,6 +3342,11 @@
     });
 
     document.addEventListener("keydown", (event) => {
+      if (howTo.open) {
+        if (event.key === "ArrowRight") showHowToPage(howToPage + 1);
+        if (event.key === "ArrowLeft") showHowToPage(howToPage - 1);
+        return;                           // Escape closes the guide by itself
+      }
       if (event.key === "Escape" && run !== null) {
         leaveRun();
         note("Stopped. Back to building.");
@@ -3151,7 +3433,10 @@
     // =====================================================================
     // THE LEARNING ENGINE
     // The same rules as src/environment.py and src/policy_iteration.py, written in JavaScript.
-    // A "plan" is what the notebook calls a policy: one move to make in every square.
+    // Words used in this code:
+    //   plan   = what the notebook calls a policy: one move to make in every square
+    //   scores = how good each move is in each square (the notebook's Q-table)
+    //   value  = the score of the move the plan picks in a square
     // =====================================================================
 
     const ACTIONS = ["up", "down", "left", "right"];
@@ -4137,6 +4422,87 @@
     }
 
     // =====================================================================
+    // HOW TO PLAY: the guide for students
+    // =====================================================================
+
+    let howToPage = 0;
+
+    // A dot for each page of the guide, so students can see how many there are and jump.
+    const howToDots = howToPages.map((page, index) => {
+      const dot = document.createElement("button");
+      dot.type = "button";
+      dot.className = "how-to-dot";
+      dot.setAttribute("aria-label", `Page ${index + 1} of ${howToPages.length}`);
+      dot.addEventListener("click", () => showHowToPage(index));
+      document.querySelector("#how-to-dots").append(dot);
+      return dot;
+    });
+
+    // Some sentences depend on the rules at the top of this script, so they are written in here.
+    function fillHowTo() {
+      howTo.querySelector('[data-fill="tries"]').textContent = RANDOM_ATTEMPTS;
+      howTo.querySelector('[data-fill="moves"]').textContent = MAX_MOVES_PER_ATTEMPT;
+      howTo.querySelector('[data-fill="discount"]').textContent = DISCOUNT;
+      howTo.querySelector('[data-fill="reward"]').textContent =
+        `${formatReward(REWARD_TREASURE)} at the treasure, ${formatReward(REWARD_HOLE)} in a hole, ${formatReward(REWARD_STEP)} for any other move.`;
+      // The walls tip only explains the wall builders this class can use.
+      for (const tip of howTo.querySelectorAll("[data-walls]")) {
+        tip.hidden = !LET_STUDENTS_SWITCH_BUILDER && tip.dataset.walls !== WALL_BUILDER;
+      }
+      for (const name of howTo.querySelectorAll(".builder-name")) name.hidden = !LET_STUDENTS_SWITCH_BUILDER;
+    }
+
+    function showHowToPage(number) {
+      howToPage = Math.max(0, Math.min(howToPages.length - 1, number));
+      howToPages.forEach((page, index) => {
+        page.hidden = index !== howToPage;
+        page.classList.toggle("is-showing", index === howToPage);
+      });
+      howToDots.forEach((dot, index) => dot.setAttribute("aria-current", index === howToPage ? "step" : "false"));
+      howToBack.style.visibility = howToPage === 0 ? "hidden" : "visible";
+      howToNext.textContent = howToPage === howToPages.length - 1 ? "Let's build!" : "Next";
+    }
+
+    // ASSUMPTION: opening the guide during a run doesn't pause it; the run carries on behind.
+    function openHowTo() {
+      fillHowTo();
+      showHowToPage(0);
+      if (!howTo.open) howTo.showModal();
+      howToNext.focus();
+    }
+
+    document.querySelector("#how-to-open").addEventListener("click", openHowTo);
+    document.querySelector("#how-to-close").addEventListener("click", () => howTo.close());
+    howToBack.addEventListener("click", () => showHowToPage(howToPage - 1));
+    howToNext.addEventListener("click", () => {
+      if (howToPage === howToPages.length - 1) howTo.close();
+      else showHowToPage(howToPage + 1);
+    });
+    // On a tablet, swiping left or right turns the page.
+    // A tap on the dark area around the guide closes it, but only when the press started
+    // there too, so a swipe that ends outside the guide doesn't close it.
+    let swipeStart = null;
+    howTo.addEventListener("pointerdown", (event) => {
+      swipeStart = { x: event.clientX, y: event.clientY, outside: event.target === howTo };
+    });
+    howTo.addEventListener("pointercancel", () => {
+      swipeStart = null;
+    });
+    howTo.addEventListener("pointerup", (event) => {
+      if (swipeStart === null) return;
+      const across = event.clientX - swipeStart.x;
+      const down = event.clientY - swipeStart.y;
+      if (Math.abs(across) > 60 && Math.abs(down) < 50) {
+        showHowToPage(howToPage + (across < 0 ? 1 : -1));
+        swipeStart = null;               // a swipe is not a tap, so it never closes the guide
+      }
+    });
+    howTo.addEventListener("click", (event) => {
+      if (event.target === howTo && swipeStart?.outside) howTo.close();
+      swipeStart = null;
+    });
+
+    // =====================================================================
     // START
     // =====================================================================
 
@@ -4145,11 +4511,12 @@
     document.body.classList.toggle("no-idle", !IDLE_ANIMATIONS);
     if (START_WITH_EXAMPLE) loadExample(true);
     refresh();
+    if (SHOW_HOW_TO_AT_START) openHowTo();
   </script>
 
   <!--
     PICTURES
-    Each piece is drawn once here and reused everywhere (board, shelf, dragging).
+    Each piece is drawn once here and reused everywhere (board, shelf, dragging, the guide).
     Harty is the fox drawing from images/Harty_iddle.png, shrunk and pasted in as text
     so this file still works on its own, with no image files next to it.
     Portals use "currentColor" so the same drawing can be blue or pink.
