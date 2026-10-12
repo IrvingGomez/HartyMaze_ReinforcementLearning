@@ -584,6 +584,100 @@
     .wall-help p { margin: 0; color: var(--chalk-dim); font-size: 0.86rem; line-height: 1.35; }
     .wall-help strong { color: var(--chalk); }
 
+    /* The two ways to build walls, as tabs in the Walls heading. */
+    .builder-tabs { display: flex; gap: 16px; }
+    .builder-tab {
+      position: relative;
+      padding: 2px 0 4px;
+      line-height: 1.2;
+      border: 0;
+      background: none;
+      color: var(--chalk-dim);
+      font: inherit;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .builder-tab[aria-pressed="true"] { color: var(--chalk); }
+    /* A short orange chalk line under the one in use. */
+    .builder-tab[aria-pressed="true"]::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 3px;
+      border-radius: 2px;
+      background: var(--harty);
+    }
+    .builder-tab:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; border-radius: 4px; }
+    /* With LET_STUDENTS_SWITCH_BUILDER off, only the builder in use shows, as a plain heading. */
+    .no-switch .builder-tab:not([aria-pressed="true"]) { display: none; }
+    .no-switch .builder-tab { pointer-events: none; }
+    .no-switch .builder-tab::after { display: none; }
+
+    /* Only the help for the builder in use shows. */
+    .shape-palette { display: none; align-items: center; gap: 4px; min-height: 60px; }
+    .builder-shapes .shape-palette { display: flex; }
+    .builder-shapes .wall-help { display: none; }
+
+    /* A wall shape in the palette: chalk lines on the board, with no box around it. */
+    .shape-tile {
+      flex: 0 0 52px;
+      width: 52px;
+      height: 52px;
+      padding: 0;
+      border: 0;
+      border-radius: 50%;
+      background: none;
+      color: var(--chalk);
+      cursor: grab;
+      touch-action: none;
+    }
+    .shape-art { display: block; width: 100%; height: 100%; transition: transform 200ms cubic-bezier(0.3, 1.5, 0.5, 1); }
+    .shape-art svg { display: block; width: 100%; height: 100%; overflow: visible; transition: transform 320ms cubic-bezier(0.3, 1.4, 0.5, 1); }
+    .shape-line { stroke: currentColor; stroke-width: 0.3; stroke-linecap: round; fill: none; }
+    .shape-dot { fill: currentColor; opacity: 0.45; }
+    @media (hover: hover) { .shape-tile:hover .shape-art { transform: translateY(-4px) scale(1.06); } }
+    .shape-tile:active .shape-art { transform: scale(1.1); }
+    .shape-tile:focus-visible { outline: 3px dashed var(--sun); outline-offset: 2px; }
+    /* Picked up by tapping: the shape floats until you tap the maze. */
+    .shape-tile.is-held { color: var(--sun); }
+    .shape-tile.is-held .shape-art { animation: float 1.4s ease-in-out infinite; }
+
+    .turn-btn {
+      flex: 0 0 44px;
+      display: grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      margin-left: auto;
+      padding: 0;
+      border: 2.5px solid var(--chalk-dim);
+      border-radius: 50%;
+      background: none;
+      color: var(--chalk);
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .turn-btn svg { width: 22px; height: 22px; transition: transform 320ms cubic-bezier(0.3, 1.4, 0.5, 1); }
+    .turn-btn:active { background: var(--sun); border-color: var(--ink); color: var(--ink); }
+    .turn-btn:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
+
+    /* On the board: where a wall shape would land. Green fits, red sticks out of the maze. */
+    .shape-preview line { stroke: var(--go); stroke-width: 12; stroke-linecap: round; opacity: 0.8; pointer-events: none; }
+    .shape-preview.is-blocked line { stroke: var(--stop); }
+    .shape-preview line.is-already { opacity: 0.25; }      /* already a wall, or the outside edge */
+
+    /* With wall shapes, the dots are only the points shapes snap to, so they can't be tapped. */
+    .board.builder-shapes .dot { pointer-events: none; }
+    .board.builder-shapes .dot-mark { opacity: 0.55; }
+    /* Holding a wall shape: a tap on the maze puts it down there. */
+    .board.is-stamping .wall,
+    .board.is-stamping .dot,
+    .board.is-stamping .option { pointer-events: none; }
+    .board.is-stamping { cursor: crosshair; }
+    .board.is-stamping .dot-mark { opacity: 1; }
+
     .actions { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 14px 0 0 -10px; }
     .actions .text-btn { color: var(--chalk); }
 
@@ -619,6 +713,11 @@
 
     .ghost.is-removing svg { opacity: 0.55; }
     .ghost.is-removing .ghost-label { opacity: 1; }
+
+    /* A wall shape following the finger, while it is off the maze. */
+    .ghost.ghost-shape { transform: translate(-50%, -50%) scale(1.04); transition: opacity 120ms; }
+    .ghost.ghost-shape.is-hidden { opacity: 0; }
+    .ghost-wall { stroke: var(--ink); stroke-width: 0.12; stroke-linecap: round; }
 
     .sprites { position: absolute; width: 0; height: 0; overflow: hidden; }
 
@@ -823,6 +922,7 @@
 
     /* ===== Medium-height landscape screens: a slightly shorter run panel ===== */
     @media (min-width: 901px) and (min-height: 781px) and (max-height: 880px) {
+      .tool-section + .tool-section { margin-top: 14px; }
       .plan-caption { min-height: 2.6em; }
       .attempt-log { max-height: 80px; }
     }
@@ -980,7 +1080,14 @@
       </section>
 
       <section class="tool-section builder-only">
-        <h2><span>Walls</span><span class="rule"></span><small id="wall-count">None yet</small></h2>
+        <h2>
+          <!-- The two ways to build walls. They build the same walls, so you can switch any time. -->
+          <span class="builder-tabs" role="group" aria-label="How to build walls">
+            <button class="builder-tab" type="button" data-builder="draw" aria-pressed="true">Draw walls</button>
+            <button class="builder-tab" type="button" data-builder="shapes" aria-pressed="false">Wall shapes</button>
+          </span>
+          <span class="rule"></span>
+        </h2>
         <div class="wall-help">
           <!-- A chalk drawing: tap dot 1, then dot 2, and a wall appears between them. -->
           <svg viewBox="0 0 110 60" aria-hidden="true">
@@ -997,12 +1104,18 @@
           </svg>
           <p><strong>Tap a dot, then the dot beside it</strong>, or drag along the dots. Tap a wall to knock it down.</p>
         </div>
+        <!-- The script adds one button for each shape in WALL_SHAPES, before the Turn button. -->
+        <div id="shape-palette" class="shape-palette" role="group" aria-label="Wall shapes">
+          <button id="turn-shapes" class="turn-btn" type="button" aria-label="Turn the wall shapes" title="Turn the shapes (R)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-again"></use></svg>
+          </button>
+        </div>
       </section>
 
       <div class="actions builder-only">
         <button id="clear-walls" class="text-btn" type="button">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 14.5 13 6l6 6-8.5 8.5H7l-2.5-2.5a1.4 1.4 0 0 1 0-2z M9 10l6 6 M12.5 20.5H20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Clear walls
+          Clear walls <span id="wall-count"></span>
         </button>
         <button id="clear-pieces" class="text-btn" type="button">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 14.5 13 6l6 6-8.5 8.5H7l-2.5-2.5a1.4 1.4 0 0 1 0-2z M9 10l6 6 M12.5 20.5H20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -1130,6 +1243,46 @@
     // where he is), like simulate_path() in src/animation.py.
     // ASSUMPTION: the random tries only show what happens without a plan. The planning itself
     // works from the maze's rules, like policy_iteration() in the notebook, not from those tries.
+
+    // =====================================================================
+    // WALL BUILDERS: two ways to build walls, so you can compare them
+    //   "draw"    tap a dot, then the dot beside it (or drag along the dots)
+    //   "shapes"  drag ready-made wall shapes from a palette onto the maze
+    // Both build exactly the same walls, and the learning engine uses them the same way.
+    // =====================================================================
+
+    const WALL_BUILDER = "draw";               // the way the page starts: "draw" or "shapes"
+    const LET_STUDENTS_SWITCH_BUILDER = true;  // false hides the switch, so a class only uses WALL_BUILDER
+
+    // The ready-made wall shapes, drawn with the same + --- | marks as the example mazes below:
+    // each + is a dot, and --- or | is a wall between two dots. Add a shape here and it
+    // appears in the palette.
+    // ASSUMPTION: five shapes: a short wall, a long wall, a corner, a T and a dead end.
+    const WALL_SHAPES = [
+      { name: "Short wall", drawing: ["+---+"] },
+      { name: "Long wall", drawing: ["+---+---+"] },
+      { name: "Corner", drawing: [
+        "+---+",
+        "|",
+        "+"
+      ] },
+      { name: "T wall", drawing: [
+        "+---+---+",
+        "    |",
+        "    +"
+      ] },
+      { name: "Dead end", drawing: [
+        "+   +",
+        "|   |",
+        "+---+"
+      ] }
+    ];
+
+    // ASSUMPTION: shapes snap to the dots. Parts that land on the outside edge are skipped
+    // (it is always a wall), and a shape that sticks out of the maze can't be placed.
+    // ASSUMPTION: a placed shape becomes ordinary walls, because the engine only knows walls.
+    // So walls are knocked down one at a time, and Undo takes back a whole shape.
+    // ASSUMPTION: one Turn button turns all the shapes together, a quarter turn clockwise.
 
     // =====================================================================
     // EXAMPLE MAZES: one for each size, loaded by the "Example maze" button
@@ -1280,6 +1433,8 @@
     let noteTimer = null;
     let lastSay = "";
     let runSay = "";            // what Harty is saying while he runs
+    let wallBuilder = WALL_BUILDER;   // which way of building walls is showing: "draw" or "shapes"
+    let shapeTurns = 0;               // how many quarter turns (clockwise) the wall shapes have been given
     const history = [];         // saved copies of the maze for Undo
 
     // If the computer is set to "reduce motion", skip all the decorative movement.
@@ -1302,6 +1457,9 @@
     const biggerButton = document.querySelector("#bigger");
     const sizeLabel = document.querySelector("#size-label");
     const exampleButton = document.querySelector("#example");
+    const builderTabs = [...document.querySelectorAll(".builder-tab")];
+    const shapePalette = document.querySelector("#shape-palette");
+    const turnButton = document.querySelector("#turn-shapes");
     const boardWrap = document.querySelector("#board-wrap");
     const runButton = document.querySelector("#run");
     const runIcon = document.querySelector("#run-icon");
@@ -1816,6 +1974,212 @@
     }
 
     // =====================================================================
+    // BUILDING WALLS WITH SHAPES (the second way to build walls)
+    // A shape is a list of short walls, and each short wall joins two neighboring dots.
+    // Putting a shape down adds those walls to the same "walls" list the dots build.
+    // =====================================================================
+
+    // Read a drawing from WALL_SHAPES into its short walls.
+    function readShape(drawing) {
+      const segments = [];
+      drawing.forEach((line, index) => {
+        const row = Math.floor(index / 2);
+        for (let column = 0; 4 * column < line.length; column += 1) {
+          // On a line of dots, "---" after a dot is a wall to the next dot on the right.
+          if (index % 2 === 0 && line.slice(4 * column + 1, 4 * column + 4) === "---") {
+            segments.push([{ row, column }, { row, column: column + 1 }]);
+          }
+          // On the line between two lines of dots, "|" under a dot is a wall to the dot below.
+          if (index % 2 === 1 && line[4 * column] === "|") {
+            segments.push([{ row, column }, { row: row + 1, column }]);
+          }
+        }
+      });
+      return segments;
+    }
+
+    // How many dots a shape goes down and across, counting from 0.
+    function shapeSize(segments) {
+      const dots = segments.flat();
+      return { tall: Math.max(...dots.map((dot) => dot.row)), wide: Math.max(...dots.map((dot) => dot.column)) };
+    }
+
+    // Turn a shape a quarter turn clockwise: what was along the left side ends up along the top.
+    function turnClockwise(segments) {
+      const { tall } = shapeSize(segments);
+      return segments.map((segment) => segment.map((dot) => ({ row: dot.column, column: tall - dot.row })));
+    }
+
+    // A shape from WALL_SHAPES, turned the way the palette shows it right now.
+    function shapeNow(index) {
+      let segments = readShape(WALL_SHAPES[index].drawing);
+      for (let turn = 0; turn < shapeTurns % 4; turn += 1) segments = turnClockwise(segments);
+      return { name: WALL_SHAPES[index].name, segments };
+    }
+
+    // Is this spot on the board over the maze (or close enough to it)?
+    function isOverMaze(point) {
+      const low = MARGIN - CELL / 2;
+      const high = MARGIN + gridSize * CELL + CELL / 2;
+      return point.x >= low && point.x <= high && point.y >= low && point.y <= high;
+    }
+
+    // Where a shape lands when its middle is at this spot on the board, and which new walls it adds.
+    function shapeLanding(segments, point) {
+      const { tall, wide } = shapeSize(segments);
+      const top = Math.round((point.y - MARGIN) / CELL - tall / 2);
+      const left = Math.round((point.x - MARGIN) / CELL - wide / 2);
+      const placed = segments.map((segment) => segment.map((dot) => ({ row: dot.row + top, column: dot.column + left })));
+      const inside = (dot) => dot.row >= 0 && dot.row <= gridSize && dot.column >= 0 && dot.column <= gridSize;
+      const fits = placed.every((segment) => segment.every(inside));
+      const newWalls = [];
+      if (fits) {
+        for (const [a, b] of placed) {
+          const cells = cellsBesideLine(a, b);      // null on the outside edge, which is always a wall
+          if (cells === null) continue;
+          const key = wallKey(cells[0], cells[1]);
+          if (!walls.has(key) && !newWalls.includes(key)) newWalls.push(key);
+        }
+      }
+      const middle = { x: MARGIN + (left + wide / 2) * CELL, y: MARGIN + (top + tall / 2) * CELL };
+      return { placed, fits, newWalls, middle };
+    }
+
+    // Put a wall shape down with its middle at this spot. Returns true when it built a wall.
+    function placeShape(index, point) {
+      const shape = shapeNow(index);
+      const landing = shapeLanding(shape.segments, point);
+      if (!landing.fits) {
+        note(`The ${shape.name.toLowerCase()} sticks out of the maze there.`, true);
+        refresh();
+        return false;
+      }
+      if (landing.newWalls.length === 0) {
+        const onEdge = landing.placed.every(([a, b]) => cellsBesideLine(a, b) === null);
+        note(onEdge ? "That's the outside wall already." : "Those walls are already there.", true);
+        refresh();
+        return false;
+      }
+      saveForUndo();                                // the whole shape is one Undo step
+      landing.newWalls.forEach((key) => {
+        walls.add(key);
+        justBuilt.add(key);
+      });
+      const built = landing.newWalls.length;
+      note(`${shape.name} placed: ${built} wall${built === 1 ? "" : "s"} built.`);
+      refresh();
+      dust(landing.middle, 150);
+      return true;
+    }
+
+    // Show where a shape would land: green if it fits, red if it sticks out. null hides it.
+    function showShapePreview(landing) {
+      const preview = board.querySelector("#shape-preview");
+      preview.replaceChildren();
+      if (landing === null) {
+        preview.setAttribute("visibility", "hidden");
+        return;
+      }
+      preview.classList.toggle("is-blocked", !landing.fits);
+      for (const [a, b] of landing.placed) {
+        const start = dotPoint(a);
+        const end = dotPoint(b);
+        const cells = landing.fits ? cellsBesideLine(a, b) : null;
+        const already = landing.fits && (cells === null || walls.has(wallKey(cells[0], cells[1])));
+        addSvg("line", { x1: start.x, y1: start.y, x2: end.x, y2: end.y, class: already ? "is-already" : "" }, preview);
+      }
+      preview.setAttribute("visibility", "visible");
+    }
+
+    // A small chalk picture of a shape, for the palette. It is centered, so it can turn in place.
+    function shapePicture(segments) {
+      const { tall, wide } = shapeSize(segments);
+      const picture = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      picture.setAttribute("viewBox", `${wide / 2 - 1.25} ${tall / 2 - 1.25} 2.5 2.5`);
+      picture.setAttribute("aria-hidden", "true");
+      for (let row = 0; row <= tall; row += 1) {
+        for (let column = 0; column <= wide; column += 1) addSvg("circle", { cx: column, cy: row, r: 0.11, class: "shape-dot" }, picture);
+      }
+      for (const [a, b] of segments) addSvg("line", { x1: a.column, y1: a.row, x2: b.column, y2: b.row, class: "shape-line" }, picture);
+      return picture;
+    }
+
+    // The copy of a shape that follows the finger while it is off the maze, at the maze's size.
+    function makeShapeGhost(index) {
+      const ghost = document.createElement("div");
+      ghost.className = "ghost ghost-shape";
+      document.body.append(ghost);
+      paintShapeGhost(ghost, index);
+      return ghost;
+    }
+
+    function paintShapeGhost(ghost, index) {
+      const { segments } = shapeNow(index);
+      const { tall, wide } = shapeSize(segments);
+      const cellPixels = board.getBoundingClientRect().width * CELL / boardSize;
+      ghost.style.width = `${(wide + 0.3) * cellPixels}px`;
+      ghost.style.height = `${(tall + 0.3) * cellPixels}px`;
+      const picture = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      picture.setAttribute("viewBox", `-0.15 -0.15 ${wide + 0.3} ${tall + 0.3}`);
+      for (const [a, b] of segments) addSvg("line", { x1: a.column, y1: a.row, x2: b.column, y2: b.row, class: "ghost-wall" }, picture);
+      ghost.replaceChildren(picture);
+    }
+
+    // While a shape is dragged: over the maze, show where it would land; off the maze, the shape
+    // follows the finger. On a touch screen the shape sits a little above the finger, so the
+    // finger doesn't hide where it is going.
+    function showShapeDrag(drag) {
+      const lift = drag.pointerType === "touch" ? board.getBoundingClientRect().width * CELL / boardSize * 0.6 : 0;
+      const point = toBoardPoint(drag.lastX, drag.lastY - lift);
+      const over = isOverMaze(point);
+      drag.point = point;
+      drag.landing = over ? shapeLanding(shapeNow(drag.shape).segments, point) : null;
+      showShapePreview(drag.landing);
+      drag.ghost.style.left = `${drag.lastX}px`;
+      drag.ghost.style.top = `${drag.lastY - lift}px`;
+      drag.ghost.classList.toggle("is-hidden", over);
+    }
+
+    // Turn every wall shape a quarter turn clockwise. Used by the Turn button, the R key,
+    // and a second finger tapping while a shape is being dragged.
+    function turnShapes() {
+      shapeTurns += 1;
+      for (const tile of shapeTiles) tile.querySelector("svg").style.transform = `rotate(${shapeTurns * 90}deg)`;
+      turnButton.querySelector("svg").style.transform = `rotate(${shapeTurns * 90}deg)`;
+      if (press !== null && press.drag && press.drag.kind === "shape") {
+        paintShapeGhost(press.drag.ghost, press.drag.shape);
+        showShapeDrag(press.drag);
+      }
+    }
+
+    // Tap a shape to pick it up; then every tap on the maze stamps one, until Done.
+    function tapShape(index) {
+      selectedDot = null;
+      if (holding !== null && holding.type === "shape" && holding.shape === index) {
+        holding = null;
+        note("");
+        refresh();
+        return;
+      }
+      holding = { type: "shape", shape: index, from: null };
+      note("");
+      refresh();
+    }
+
+    function setWallBuilder(style) {
+      if (style === wallBuilder) return;
+      wallBuilder = style;
+      stopEverything();
+      note(style === "shapes" ? "Drag a shape onto the maze. ↻ turns them all." : "Tap a dot, then the dot beside it.");
+      refresh();
+    }
+
+    function screenPointOfShape(index) {
+      const box = shapeTiles[index].getBoundingClientRect();
+      return { x: box.left + box.width / 2, y: box.top + box.height / 2 };
+    }
+
+    // =====================================================================
     // HOLDING A PIECE BY TAPPING (tap a piece, then tap a square)
     // =====================================================================
 
@@ -1841,10 +2205,23 @@
     }
 
     // What a tap means depends on what it landed on, and whether a piece is being held.
-    // "cell" is the cell under the finger (or under the keyboard focus).
-    function handleTap(what, cell) {
+    // "cell" is the cell under the finger (or under the keyboard focus), and "point" is the
+    // spot on the board (wall shapes are centered on it).
+    function handleTap(what, cell, point = null) {
       if (what.kind === "token") {
         tapToken(what.type);
+        return;
+      }
+      if (what.kind === "shape") {
+        tapShape(Number(what.shape));
+        return;
+      }
+      if (holding !== null && holding.type === "shape") {
+        if (point === null || !isOverMaze(point)) {
+          note("Tap inside the maze to put the shape there.", true);
+          return;
+        }
+        placeShape(holding.shape, point);
         return;
       }
       // Holding a piece from the board and tapping another piece: pick that one up instead.
@@ -1868,7 +2245,7 @@
         toggleWall(what.key);
       } else {
         selectedDot = null;
-        note("Drag a piece from the shelf, or tap a dot.");
+        note(wallBuilder === "shapes" ? "Drag a piece or a wall shape onto the maze." : "Drag a piece from the shelf, or tap a dot.");
         refresh();
       }
     }
@@ -1878,7 +2255,20 @@
     // =====================================================================
 
     function startDrag(what, event) {
-      if (holding !== null && what.kind !== "token" && what.kind !== "piece") return null;
+      if (holding !== null && what.kind !== "token" && what.kind !== "piece" && what.kind !== "shape") return null;
+
+      if (what.kind === "shape") {
+        const holdingBefore = holding;
+        holding = null;
+        selectedDot = null;
+        note("");
+        refresh();
+        document.body.classList.add("is-dragging");
+        const shape = Number(what.shape);
+        const drag = { kind: "shape", shape, ghost: makeShapeGhost(shape), holdingBefore, pointerType: event.pointerType, lastX: event.clientX, lastY: event.clientY, landing: null, point: null };
+        showShapeDrag(drag);
+        return drag;
+      }
 
       if (what.kind === "token" || what.kind === "piece") {
         const type = what.kind === "token" ? what.type : pieces.get(what.cell).type;
@@ -1921,6 +2311,12 @@
     }
 
     function moveDrag(drag, event) {
+      if (drag.kind === "shape") {
+        drag.lastX = event.clientX;
+        drag.lastY = event.clientY;
+        showShapeDrag(drag);
+        return;
+      }
       if (drag.kind === "piece") {
         drag.ghost.style.left = `${event.clientX}px`;
         drag.ghost.style.top = `${event.clientY}px`;
@@ -1969,6 +2365,19 @@
     }
 
     function finishDrag(drag, event) {
+      if (drag.kind === "shape") {
+        document.body.classList.remove("is-dragging");
+        const placed = drag.landing !== null && placeShape(drag.shape, drag.point);
+        if (placed) {
+          drag.ghost.remove();
+        } else {
+          // Dropped off the maze, or it didn't fit: the shape glides back to the palette.
+          drag.ghost.classList.remove("is-hidden");
+          if (drag.landing === null) refresh();
+          flyBack(drag.ghost, screenPointOfShape(drag.shape));
+        }
+        return;
+      }
       if (drag.kind === "piece") {
         clearTimeout(drag.settle);
         document.body.classList.remove("is-dragging");
@@ -1992,6 +2401,10 @@
       if (drag.kind === "piece") {
         clearTimeout(drag.settle);
         drag.ghost.remove();
+      }
+      if (drag.kind === "shape") {
+        drag.ghost.remove();
+        holding = drag.holdingBefore;
       }
       document.body.classList.remove("is-dragging");
       liftedCell = null;
@@ -2048,7 +2461,9 @@
       board.replaceChildren();
       board.setAttribute("viewBox", `0 0 ${boardSize} ${boardSize}`);
       board.setAttribute("aria-label", `Maze, ${gridSize} by ${gridSize} squares`);
-      board.classList.toggle("is-placing", holding !== null);
+      board.classList.toggle("is-placing", holding !== null && holding.type !== "shape");
+      board.classList.toggle("is-stamping", holding !== null && holding.type === "shape");
+      board.classList.toggle("builder-shapes", wallBuilder === "shapes");
       board.classList.toggle("is-running", run !== null);
       boardWrap.inert = run !== null;      // nothing on the board can be touched while Harty runs
       // Redrawing would restart the always-on movements from the beginning, which looks jumpy.
@@ -2150,7 +2565,7 @@
             "data-row": row,
             "data-column": column,
             role: "button",
-            tabindex: holding !== null ? "-1" : "0",
+            tabindex: holding !== null || wallBuilder === "shapes" ? "-1" : "0",
             "aria-label": `Dot at corner row ${row + 1}, column ${column + 1}`
           });
           addSvg("circle", { cx: point.x, cy: point.y, r: DOT_TAP_RADIUS, class: "dot-hit" }, group);
@@ -2162,6 +2577,7 @@
       // 9. Helpers used while dragging: the green/red drop square and the wall-drawing line.
       addSvg("rect", { id: "drop-marker", width: CELL - 14, height: CELL - 14, rx: 12, class: "drop-marker", visibility: "hidden" });
       addSvg("line", { id: "wall-rubber", class: "wall-rubber", visibility: "hidden" });
+      addSvg("g", { id: "shape-preview", class: "shape-preview", visibility: "hidden" });
 
       // The landing and "draw in" movements should only play once.
       justPlaced = new Set();
@@ -2480,7 +2896,10 @@
       document.body.classList.toggle("is-running", run !== null);
       updateRunButton();
 
-      wallCount.textContent = walls.size === 0 ? "None yet" : walls.size === 1 ? "1 built" : `${walls.size} built`;
+      wallCount.textContent = walls.size === 0 ? "" : `(${walls.size})`;
+      builderTabs.forEach((tab) => tab.setAttribute("aria-pressed", String(tab.dataset.builder === wallBuilder)));
+      document.body.classList.toggle("builder-shapes", wallBuilder === "shapes");
+      shapeTiles.forEach((tile, index) => tile.classList.toggle("is-held", holding !== null && holding.type === "shape" && holding.shape === index));
       sizeLabel.textContent = `${gridSize} × ${gridSize}`;
       smallerButton.disabled = gridSize <= SMALLEST_SIZE;
       biggerButton.disabled = gridSize >= BIGGEST_SIZE;
@@ -2491,6 +2910,7 @@
 
     // The big line in the bubble: what to do next.
     function nextStep() {
+      if (holding !== null && holding.type === "shape") return "Tap the maze where the middle of the shape should go.";
       if (holding !== null) {
         const { type, from } = holding;
         if (from !== null) return type === "harty" ? "Tap a square to move me there." : `Tap a square to move ${describe(pieces.get(from))}.`;
@@ -2512,7 +2932,7 @@
       const blocked = whyRunIsBlocked();
       if (blocked !== null && blocked.kind === "no-path") return "I can't reach the treasure! Make a way through.";
       if (blocked !== null && blocked.kind === "too-far") return "The treasure is too far away for one try.";
-      if (walls.size === 0) return "Add walls to make it tricky, or press Run!";
+      if (walls.size === 0) return wallBuilder === "shapes" ? "Drag wall shapes onto the maze, or press Run!" : "Add walls to make it tricky, or press Run!";
       return "Looking good! Press Run to watch me learn.";
     }
 
@@ -2544,7 +2964,8 @@
       coachNote.classList.toggle("is-warning", noteIsWarning);
       coachRemove.hidden = run !== null || holding === null || holding.from === null;
       coachCancel.hidden = run !== null || (holding === null && selectedDot === null);
-      coachCancel.textContent = holding !== null && holding.type === "hole" && holding.from === null ? "Done" : "Cancel";
+      // Holes and wall shapes stay picked up for more taps, so the button says Done.
+      coachCancel.textContent = holding !== null && holding.from === null && (holding.type === "hole" || holding.type === "shape") ? "Done" : "Cancel";
     }
 
     function refresh() {
@@ -2566,6 +2987,10 @@
         // The same mouse pressed again without us hearing it let go: drop the old press.
         if (press.drag) cancelDrag(press.drag);
         press = null;
+      }
+      if (press !== null && press.drag && press.drag.kind === "shape") {
+        turnShapes();                     // a second finger tap while dragging a shape turns it
+        return;
       }
       if (press !== null) return;         // ignore a second finger
       press = { id: event.pointerId, startX: event.clientX, startY: event.clientY, what, drag: null, moved: false };
@@ -2605,14 +3030,16 @@
       const cell = cellAt(event.clientX, event.clientY);
       const travel = Math.hypot(event.clientX - finished.startX, event.clientY - finished.startY);
 
+      const point = toBoardPoint(event.clientX, event.clientY);
+
       // Fingers wobble. A drag that ends almost where it started (and built no walls) was meant as a tap.
       if (finished.drag && travel < TAP_WOBBLE && !(finished.drag.kind === "wall" && finished.drag.built > 0)) {
         cancelDrag(finished.drag);
-        handleTap(finished.what, cell);
+        handleTap(finished.what, cell, point);
       } else if (finished.drag) {
         finishDrag(finished.drag, event);
       } else if (!finished.moved || travel < TAP_WOBBLE) {
-        handleTap(finished.what, cell);
+        handleTap(finished.what, cell, point);
       }
       // Anything else (a long slide that started on a wall, say) does nothing.
     });
@@ -2628,8 +3055,9 @@
       if (thing === null) return;
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
-        handleTap({ ...thing.dataset }, thing.dataset.cell ?? null);
-        if (holding !== null) board.querySelector(".cell.is-open")?.focus();
+        const cell = thing.dataset.cell ?? null;
+        handleTap({ ...thing.dataset }, cell, cell === null ? null : cellCenter(cell));
+        if (holding !== null && holding.type !== "shape") board.querySelector(".cell.is-open")?.focus();
       } else if ((event.key === "Delete" || event.key === "Backspace") && thing.dataset.kind === "piece") {
         event.preventDefault();
         removePiece(thing.dataset.cell);
@@ -2647,7 +3075,44 @@
       } else if (run === null && (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") {
         event.preventDefault();
         undo();
+      } else if (run === null && wallBuilder === "shapes" && !event.ctrlKey && !event.metaKey && event.key.toLowerCase() === "r") {
+        turnShapes();
       }
+    });
+
+    // The wall shapes palette: one button for each shape in WALL_SHAPES.
+    const shapeTiles = WALL_SHAPES.map((shape, index) => {
+      const tile = document.createElement("button");
+      tile.type = "button";
+      tile.className = "shape-tile";
+      tile.title = shape.name;
+      tile.setAttribute("aria-label", `${shape.name}: drag onto the maze, or press Enter and choose a square.`);
+      const art = document.createElement("span");
+      art.className = "shape-art";
+      art.append(shapePicture(readShape(shape.drawing)));
+      tile.append(art);
+      shapePalette.insertBefore(tile, turnButton);
+      tile.addEventListener("pointerdown", (event) => startPress(event, { kind: "shape", shape: index }));
+      // Keyboard Enter or Space picks the shape up. (Mouse and finger taps are handled by the press.)
+      tile.addEventListener("click", (event) => {
+        if (event.detail !== 0) return;
+        tapShape(index);
+        if (holding !== null) board.querySelector(".cell")?.focus();
+      });
+      return tile;
+    });
+
+    turnButton.addEventListener("click", turnShapes);
+    builderTabs.forEach((tab) => tab.addEventListener("click", () => setWallBuilder(tab.dataset.builder)));
+
+    // With a wall shape picked up, pointing at the maze with a mouse shows where it would land.
+    board.addEventListener("pointermove", (event) => {
+      if (event.pointerType !== "mouse" || press !== null || holding === null || holding.type !== "shape") return;
+      const point = toBoardPoint(event.clientX, event.clientY);
+      showShapePreview(isOverMaze(point) ? shapeLanding(shapeNow(holding.shape).segments, point) : null);
+    });
+    board.addEventListener("pointerleave", () => {
+      if (holding !== null && holding.type === "shape") showShapePreview(null);
     });
 
     coachCancel.addEventListener("click", () => {
@@ -3676,6 +4141,7 @@
     // =====================================================================
 
     setGridSize(GRID_SIZE);
+    document.body.classList.toggle("no-switch", !LET_STUDENTS_SWITCH_BUILDER);
     document.body.classList.toggle("no-idle", !IDLE_ANIMATIONS);
     if (START_WITH_EXAMPLE) loadExample(true);
     refresh();
