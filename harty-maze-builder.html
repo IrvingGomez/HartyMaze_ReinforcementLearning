@@ -37,7 +37,6 @@
       --top-row: 96px;           /* height of the speech bubble row (fixed, so the maze never jumps when Harty talks) */
       --art: 86px;               /* size of a piece on the shelf */
       --board-inset: 7%;         /* set from the script so the bubble lines up with the maze */
-      --map-size: 196px;         /* Harty's plan map in the side panel */
       --chalk-dust: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0.09 0 0 0 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E");
     }
 
@@ -342,7 +341,7 @@
     .wall-line { stroke: var(--ink); stroke-width: 12; stroke-linecap: round; }
     .wall.is-new .wall-line { stroke-dasharray: 100; animation: wall-draw 300ms ease-out; }
     .wall:focus-visible .wall-line { stroke: var(--sun); }
-    .hit-line { stroke: transparent; stroke-width: 30; stroke-linecap: round; }
+    .hit-line { stroke: transparent; stroke-width: 40; stroke-linecap: round; }
     @media (hover: hover) { .wall:hover .wall-line { stroke: var(--stop); } }
 
     .option { cursor: pointer; }
@@ -570,8 +569,8 @@
     .size-label { color: var(--chalk-dim); font-size: 0.86rem; font-weight: 600; }
     .size-stepper { display: flex; align-items: center; gap: 6px; }
     .step-btn {
-      width: 40px;
-      height: 40px;
+      width: 44px;
+      height: 44px;
       border: 2.5px solid var(--chalk-dim);
       border-radius: 50%;
       background: none;
@@ -619,6 +618,8 @@
       background: var(--harty);
     }
     .builder-tab:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; border-radius: 4px; }
+    /* The tabs are short to save room, so an invisible margin makes them big enough to tap. */
+    .builder-tab::before { content: ""; position: absolute; inset: -6px -5px; }
     /* With LET_STUDENTS_SWITCH_BUILDER off, only the builder in use shows, as a plain heading. */
     .no-switch .builder-tab:not([aria-pressed="true"]) { display: none; }
     .no-switch .builder-tab { pointer-events: none; }
@@ -732,8 +733,8 @@
 
     /* "How to play", under the title. */
     .link-btn {
-      margin: -8px 0;
-      padding: 8px 2px;
+      margin: -12px -4px;
+      padding: 12px 4px;
       border: 0;
       background: none;
       color: var(--sun);
@@ -814,6 +815,9 @@
     }
     .how-to-steps { counter-reset: step; }
     .how-to-steps li { position: relative; padding-left: 40px; counter-increment: step; }
+    .how-to-steps.is-short { gap: 6px; }
+    .how-to-steps.is-short li { padding-left: 34px; }
+    .how-to-steps.is-short li::before { width: 24px; height: 24px; font-size: 0.75rem; }
     .how-to-steps li::before {
       content: counter(step);
       position: absolute;
@@ -844,7 +848,7 @@
     }
     .how-to-nav .text-btn { color: var(--chalk); }
     .how-to-dots { display: flex; gap: 2px; }
-    .how-to-dot { width: 28px; height: 28px; padding: 8px; border: 0; background: none; cursor: pointer; }
+    .how-to-dot { width: 44px; height: 44px; padding: 16px; border: 0; background: none; cursor: pointer; }
     .how-to-dot::before { content: ""; display: block; width: 12px; height: 12px; border: 2px solid var(--chalk-dim); border-radius: 50%; }
     .how-to-dot[aria-current="step"]::before { border-color: var(--ink); background: var(--sun); }
     .how-to-next {
@@ -865,8 +869,8 @@
       right: 10px;
       display: grid;
       place-items: center;
-      width: 40px;
-      height: 40px;
+      width: 44px;
+      height: 44px;
       padding: 0;
       border: 2.5px solid var(--chalk-dim);
       border-radius: 50%;
@@ -879,73 +883,129 @@
     .how-to-dot:focus-visible,
     .how-to-close:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
 
-    /* ===== While Harty runs ===== */
+    /* ===== The lesson (after Run is pressed) ===== */
     .run-panel { display: none; }
-    .is-running .run-panel { display: block; animation: rise-in 350ms ease-out; }
+    .is-running .run-panel { display: flex; flex-direction: column; animation: rise-in 350ms ease-out; }
     .is-running .builder-only { display: none; }
     .is-running .undo { visibility: hidden; }
     .board.is-running .dot { display: none; }
-    .board.is-running .type-harty { opacity: 0.3; }     /* a faded Harty marks the start square */
+    .board.is-running .type-harty { opacity: 0.22; }    /* a faded Harty marks the start square */
     .board.is-running .art-harty { animation: none; }
     .runner-body { transform-box: fill-box; transform-origin: 50% 70%; }
     .trail { color: var(--ink); opacity: 0.3; }
 
-    /* The three parts of a run, in order: a row of numbered circles. */
-    .phases { display: flex; align-items: center; gap: 6px; margin: 0 0 12px; padding: 0; list-style: none; }
-    .phases li { display: flex; align-items: center; gap: 6px; color: var(--chalk-dim); font-size: 0.82rem; font-weight: 600; white-space: nowrap; }
-    .phases li + li::before {
-      content: "";
-      width: 16px;
-      height: 2px;
-      margin-right: 2px;
-      background: repeating-linear-gradient(90deg, var(--chalk-dim) 0 4px, transparent 4px 7px);
-    }
-    .phase-mark {
-      flex: 0 0 24px;
+    /* The seven steps of the lesson: a row of numbered circles. Each one jumps to its step. */
+    .lesson-steps { display: flex; gap: 1px; margin: 0 0 10px -7px; padding: 0; list-style: none; }
+    .lesson-step {
       display: grid;
       place-items: center;
-      height: 24px;
+      width: 44px;
+      height: 44px;
+      padding: 0;
+      border: 0;
+      background: none;
+      color: var(--chalk-dim);
+      font: 800 0.8rem var(--font-display);
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .lesson-step span {
+      display: grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
       border: 2.5px dashed var(--chalk-dim);
       border-radius: 50%;
-      font: 800 0.75rem var(--font-display);
     }
-    .phases li.is-now { color: var(--chalk); }
-    .phases li.is-now .phase-mark { border: 2.5px solid var(--ink); background: var(--sun); color: var(--ink); }
-    .phases li.is-done .phase-mark { border: 2.5px solid var(--ink); background: var(--go); color: #fff; }
+    .lesson-step.is-now span { border: 2.5px solid var(--ink); background: var(--sun); color: var(--ink); }
+    .lesson-step.is-done span { border: 2.5px solid var(--ink); background: var(--go); color: #fff; }
+    .lesson-step:focus-visible { outline: 3px solid var(--sun); outline-offset: -2px; border-radius: 50%; }
 
-    /* ===== Harty's plan: the small map in the side panel ===== */
-    .plan-view { display: flex; align-items: center; gap: 14px; }
-    .plan-map { flex: 0 0 var(--map-size); width: var(--map-size); height: var(--map-size); overflow: visible; touch-action: manipulation; }
-    .map-tint { fill: #f0efec; transition: fill 600ms ease; }
-    .map-cell.is-picked .map-tint { stroke: var(--sun); stroke-width: 4; }
-    .map-grid { stroke: rgba(29, 26, 59, 0.14); stroke-width: 1; }
-    .map-wall { stroke: var(--ink); stroke-width: 4; stroke-linecap: round; }
-    .map-border { fill: none; stroke: var(--ink); stroke-width: 5; }
-    .map-portal { fill: none; stroke-width: 3; }
-    /* Arrows turn the short way round when the plan changes. Each arrow sits in a group
-       centered on its square, so it turns around the middle of that square. */
-    .map-arrow {
+    .lesson-count { margin: 0; color: var(--chalk-dim); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+    .tools .lesson-title { display: block; margin: 2px 0 8px; font-size: 1.55rem; line-height: 1.15; animation: none; }
+    .lesson-text { margin: 0 0 12px; font-size: 1rem; line-height: 1.45; }
+    .lesson-text b { color: var(--sun); }
+    .lesson-example {
+      margin: 0 0 12px;
+      padding: 10px 12px;
+      border: 2px dashed rgba(159, 179, 191, 0.45);
+      border-radius: 12px;
+      font-size: 0.92rem;
+      line-height: 1.4;
+      font-variant-numeric: tabular-nums;
+    }
+    .lesson-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .lesson-tools-label { color: var(--chalk-dim); font-size: 0.86rem; font-weight: 700; }
+    .lesson-tools[hidden] { display: none; }
+    .lesson-tool {
+      min-height: 44px;
+      padding: 0 13px;
+      border: 2.5px solid var(--chalk-dim);
+      border-radius: 999px;
+      background: none;
+      color: var(--chalk);
+      font: 700 0.86rem var(--font-body);
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .lesson-tool[aria-pressed="true"] { border-color: var(--ink); background: var(--sun); color: var(--ink); }
+    .lesson-tool:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
+
+    /* The value colors, from the worst (red) through 0 to the best (purple), like the notebook. */
+    .value-legend { display: grid; grid-template-columns: auto auto 1fr auto; align-items: center; gap: 8px; margin-bottom: 12px; color: var(--chalk-dim); font-size: 0.8rem; font-weight: 600; }
+    .value-legend[hidden] { display: none; }
+    .legend-bar { height: 12px; border: 2px solid var(--ink); border-radius: 6px; background: linear-gradient(90deg, #c8463a, #f0a596, #f1efe9, #b9acdd, #5f45a7); }
+
+    /* Next and Back. */
+    .lesson-nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 12px; border-top: 2px dashed rgba(159, 179, 191, 0.3); }
+    .lesson-nav .text-btn { color: var(--chalk); }
+    .lesson-next {
+      min-width: 150px;
+      min-height: 52px;
+      padding: 0 28px;
+      border: 3px solid var(--ink);
+      border-radius: 999px;
+      background: var(--harty);
+      color: #fff;
+      box-shadow: 0 4px 0 var(--slate-deep);
+      font: 800 1.1rem var(--font-display);
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .lesson-next:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--slate-deep); }
+    .lesson-next:focus-visible { outline: 3px solid var(--sun); outline-offset: 3px; }
+
+    /* What the maze shows during the lesson: value colors, values and policy arrows. */
+    .lesson-tint { fill: transparent; transition: fill 400ms ease; }
+    .lesson-pick { fill: none; stroke: var(--sun); stroke-width: 6; visibility: hidden; }
+    .lesson-square.is-picked .lesson-pick { visibility: visible; }
+    .lesson-arrow {
       color: var(--ink);
+      opacity: 0;
       transform-origin: 0 0;
       transition: transform 550ms cubic-bezier(0.3, 1.4, 0.5, 1), opacity 300ms;
     }
-    .map-arrow.is-changed { color: var(--harty); }
-    .plan-map.no-plan .map-arrow { opacity: 0; }
-    .map-harty { transition: transform 160ms ease-out; pointer-events: none; }
-    .map-harty circle { fill: var(--harty); stroke: var(--ink); stroke-width: 2.5; }
-
-    .plan-legend { display: grid; gap: 10px; color: var(--chalk-dim); font-size: 0.78rem; line-height: 1.25; }
-    .legend-row { display: flex; align-items: center; gap: 6px; }
-    .legend-row svg { flex: none; width: 18px; height: 18px; color: var(--chalk); }
-    .legend-scale { display: grid; grid-template-columns: 12px 1fr; gap: 8px; height: 92px; }
-    /* The score colors, from +1 (the treasure) at the top to -1 (a hole) at the bottom. */
-    .scale-bar {
-      border: 2px solid var(--ink);
-      border-radius: 3px;
-      background: linear-gradient(#2a78d6, #9ec5f4, #f0efec, #f5aca3, #e34948);
+    .lesson-arrow.is-shown { opacity: 1; }
+    .lesson-arrow.is-changed { color: var(--harty); }
+    .lesson-value {
+      fill: var(--ink);
+      font: 800 17px var(--font-display);
+      text-anchor: end;
+      paint-order: stroke;
+      stroke: rgba(255, 255, 255, 0.8);
+      stroke-width: 4px;
+      stroke-linejoin: round;
     }
-    .scale-labels { display: flex; flex-direction: column; justify-content: space-between; }
-    .plan-caption { min-height: 3.9em; margin: 8px 0 10px; color: var(--chalk); font-size: 0.86rem; line-height: 1.3; }
+    .lesson-value.is-light { fill: #fff; stroke: rgba(29, 26, 59, 0.55); }
+    .lesson-marks { pointer-events: none; }
+    .mark-state { fill: none; stroke: var(--sun); stroke-width: 4; stroke-dasharray: 10 8; }
+    .mark-label rect { fill: #fff; stroke: var(--ink); stroke-width: 2.5; }
+    .mark-label text { fill: var(--ink); font: 800 14px var(--font-display); text-anchor: middle; dominant-baseline: central; }
+    .mark-label.is-good rect { fill: #8f7cc4; }
+    .mark-label.is-bad rect { fill: #e2705f; }
+    .mark-label.is-good text, .mark-label.is-bad text { fill: #fff; }
+    .mark-label.is-best rect { fill: var(--sun); }
+    .mark-label.is-small text { font-size: 13.5px; }
 
     .fx-reach { fill: #ffffff; stroke: var(--sun); stroke-width: 4; }
 
@@ -965,7 +1025,7 @@
     .rl-label { color: var(--chalk-dim); font-size: 0.68rem; font-weight: 600; white-space: nowrap; }
     .rl-slot strong { min-height: 1.25em; color: var(--chalk); font: 800 1rem var(--font-display); white-space: nowrap; }
     .rl-arrow { padding-bottom: 6px; color: var(--chalk-dim); }
-    #rl-reward.is-good { color: #8cc2ff; }
+    #rl-reward.is-good { color: #c9bdf2; }
     #rl-reward.is-bad { color: #ff8f8a; }
     .rl-return { margin: 6px 0 0; color: var(--chalk-dim); font-size: 0.8rem; }
     .rl-return strong { color: var(--chalk); font-family: var(--font-display); }
@@ -975,26 +1035,9 @@
     .thought-mark { fill: var(--ink); font: 800 19px var(--font-display); text-anchor: middle; dominant-baseline: central; }
     .thought { transform-box: fill-box; transform-origin: 0% 100%; }
     .fx-reward { font: 800 28px var(--font-display); text-anchor: middle; paint-order: stroke; stroke: var(--ink); stroke-width: 5px; stroke-linejoin: round; }
-    .fx-reward.is-good { fill: #5598e7; }
+    .fx-reward.is-good { fill: #8f7cc4; }
     .fx-reward.is-bad { fill: #e34948; }
     .fx-reward.is-zero { fill: #fff; font-size: 19px; stroke-width: 4px; }
-
-    .attempt-log { max-height: 136px; margin: 0; padding: 0; overflow-y: auto; list-style: none; }
-    .attempt-log li {
-      display: grid;
-      grid-template-columns: 24px 1fr auto;
-      align-items: center;
-      gap: 10px;
-      padding: 7px 0;
-      border-top: 2px dashed rgba(159, 179, 191, 0.25);
-      font-size: 0.88rem;
-      animation: rise-in 300ms ease-out;
-    }
-    .log-icon { width: 22px; height: 22px; color: var(--chalk-dim); overflow: visible; }
-    .log-name { font-weight: 700; }
-    .log-result { color: var(--chalk-dim); text-align: right; }
-    .attempt-log li.is-best .log-name,
-    .attempt-log li.is-best .log-result { color: var(--sun); }
 
     .run-controls { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
     .speed-label { color: var(--chalk-dim); font-size: 0.86rem; font-weight: 600; }
@@ -1012,7 +1055,6 @@
     }
     .speed[aria-pressed="true"] { border-color: var(--ink); background: var(--sun); color: var(--ink); }
     .speed:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
-    #back-to-building { margin: 8px 0 0 -10px; color: var(--chalk); }
 
     /* ===== Movement definitions ===== */
     @keyframes land {
@@ -1071,18 +1113,18 @@
       .token-name { margin-top: 16px; }
       .tool-hint { margin-top: 10px; }
       .actions { margin-top: 8px; }
-      :root { --map-size: 150px; }
-      .phases { margin-bottom: 8px; }
-      .plan-caption { min-height: 2.6em; margin: 6px 0 8px; font-size: 0.8rem; }
+      .lesson-steps { margin-bottom: 4px; }
+      .tools .lesson-title { margin-bottom: 6px; font-size: 1.3rem; }
+      .lesson-text { margin-bottom: 8px; font-size: 0.92rem; line-height: 1.38; }
+      .lesson-example { margin-bottom: 8px; padding: 8px 10px; font-size: 0.86rem; }
+      .lesson-tools { margin-bottom: 8px; }
       .rl-loop { margin-top: 6px; }
-      .attempt-log { max-height: 40px; }
+      .run-controls { margin-top: 8px; }
     }
 
-    /* ===== Medium-height landscape screens: a slightly shorter run panel ===== */
+    /* ===== Medium-height landscape screens: a little less space between the shelves ===== */
     @media (min-width: 901px) and (min-height: 781px) and (max-height: 880px) {
       .tool-section + .tool-section { margin-top: 14px; }
-      .plan-caption { min-height: 2.6em; }
-      .attempt-log { max-height: 80px; }
     }
 
     /* ===== Tablets held upright, and phones: everything in one column ===== */
@@ -1105,6 +1147,19 @@
       }
 
       .tools { justify-self: center; width: min(100%, 720px); }
+
+      /* During the lesson, Next and Back stay at the bottom of the screen, under the maze. */
+      .is-running .lesson-nav {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 5;
+        padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+        border-top: 3px solid var(--ink);
+        background: var(--slate-deep);
+      }
+      .is-running .app { padding-bottom: 96px; }
       .shelves { grid-template-columns: 1fr 1fr; gap: 0 24px; }
 
       /* The board is above the shelves here, so the chalk arrow points up. */
@@ -1290,31 +1345,18 @@
         </button>
       </div>
 
-      <!-- Shown instead of the shelves while Harty runs. -->
-      <section class="run-panel" aria-label="Watching Harty learn">
-        <h2><span>Harty's policy</span><span class="rule"></span></h2>
-        <!-- The plan as Harty sees it: his move in every square, on a color for its score. -->
-        <div class="plan-view">
-          <svg id="plan-map" class="plan-map" role="img" aria-label="Harty's policy"></svg>
-          <div class="plan-legend">
-            <div class="legend-row"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#plan-arrow"></use></svg><span>My action in each state</span></div>
-            <div>Value</div>
-            <div class="legend-scale" aria-hidden="true">
-              <span class="scale-bar"></span>
-              <span class="scale-labels"><span>+1 treasure</span><span>0</span><span>&minus;1 hole</span></span>
-            </div>
-          </div>
-        </div>
-        <p id="plan-caption" class="plan-caption" aria-live="polite"></p>
-        <ol class="phases">
-          <li data-phase="random"><span class="phase-mark">1</span><span>Explore</span></li>
-          <li data-phase="learn"><span class="phase-mark">2</span><span id="learn-label">Learn</span></li>
-          <li data-phase="best"><span class="phase-mark">3</span><span>Best policy</span></li>
-        </ol>
-        <div class="attempt-now">
+      <!-- The lesson, shown instead of the shelves after Run is pressed (see THE LESSON in the script). -->
+      <section class="run-panel" aria-label="Lesson">
+        <ol id="lesson-steps" class="lesson-steps" aria-label="Steps of the lesson"></ol>
+        <p id="lesson-count" class="lesson-count"></p>
+        <h2 id="lesson-title" class="lesson-title"></h2>
+        <p id="lesson-text" class="lesson-text" aria-live="polite"></p>
+        <p id="lesson-example" class="lesson-example" aria-live="polite" hidden></p>
+        <!-- While Harty walks: the reinforcement learning loop, live. Where he is, what he does,
+             what he gets, and where he ends up. -->
+        <div id="walk-panel" class="attempt-now" hidden>
           <div class="attempt-head"><strong id="attempt-name"></strong><span id="attempt-moves"></span></div>
           <div id="moves-bar" class="moves-bar" aria-hidden="true"><span id="moves-fill"></span></div>
-          <!-- The reinforcement learning loop, live: where Harty is, what he does, what he gets, where he ends up. -->
           <div id="rl-loop" class="rl-loop is-idle" aria-hidden="true">
             <div class="rl-slot"><span class="rl-label">State</span><strong id="rl-state">–</strong></div>
             <span class="rl-arrow">→</span>
@@ -1326,7 +1368,14 @@
           </div>
           <p class="rl-return">Return (total reward this episode): <strong id="rl-return">0</strong></p>
         </div>
-        <ol id="attempt-log" class="attempt-log" aria-label="Attempts so far" aria-live="polite"></ol>
+        <div id="lesson-tools" class="lesson-tools" hidden></div>
+        <div id="value-legend" class="value-legend" aria-hidden="true" hidden>
+          <span>Value</span><span id="legend-low">−1</span><span class="legend-bar"></span><span id="legend-high">+1</span>
+        </div>
+        <div class="lesson-nav">
+          <button id="lesson-back" class="text-btn" type="button">Back</button>
+          <button id="lesson-next" class="lesson-next" type="button">Next</button>
+        </div>
         <div class="run-controls">
           <span id="speed-label" class="speed-label">Speed</span>
           <div class="speeds" role="group" aria-labelledby="speed-label">
@@ -1335,10 +1384,6 @@
             <button class="speed" type="button" data-speed="4" aria-pressed="false">4×</button>
           </div>
         </div>
-        <button id="back-to-building" class="text-btn" type="button" hidden>
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 6 4 12l6 6M4 12h16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Back to building
-        </button>
       </section>
     </aside>
   </div>
@@ -1393,24 +1438,29 @@
       </section>
 
       <section class="how-to-page" hidden>
-        <svg class="how-to-art" viewBox="0 0 420 112" aria-hidden="true">
-          <circle cx="50" cy="48" r="38" fill="#f2661c" stroke="#1d1a3b" stroke-width="4"/>
-          <use href="#icon-run" x="32" y="30" width="38" height="38" style="color: #fff"></use>
-          <path d="M100 48 H 128 M120 40 L 129 48 L 120 56" filter="url(#chalk)" fill="none" stroke="#f2f0e6" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M184 48 H 238 M282 48 H 336" fill="none" stroke="#9fb3bf" stroke-width="3" stroke-dasharray="5 6"/>
+        <svg class="how-to-art" viewBox="0 0 420 92" aria-hidden="true">
+          <circle cx="44" cy="44" r="36" fill="#f2661c" stroke="#1d1a3b" stroke-width="4"/>
+          <use href="#icon-run" x="27" y="27" width="36" height="36" style="color: #fff"></use>
+          <path d="M92 44 H 116 M108 36 L 117 44 L 108 52" filter="url(#chalk)" fill="none" stroke="#f2f0e6" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M150 44 H 396" fill="none" stroke="#9fb3bf" stroke-width="3" stroke-dasharray="5 6"/>
           <g class="how-to-step-marks">
-            <circle cx="164" cy="48" r="20"/><circle cx="260" cy="48" r="20"/><circle cx="356" cy="48" r="20"/>
-            <text x="164" y="54">1</text><text x="260" y="54">2</text><text x="356" y="54">3</text>
+            <circle cx="152" cy="44" r="16"/><circle cx="193" cy="44" r="16"/><circle cx="234" cy="44" r="16"/><circle cx="275" cy="44" r="16"/>
+            <circle cx="316" cy="44" r="16"/><circle cx="357" cy="44" r="16"/><circle cx="398" cy="44" r="16"/>
+            <text x="152" y="50">1</text><text x="193" y="50">2</text><text x="234" y="50">3</text><text x="275" y="50">4</text>
+            <text x="316" y="50">5</text><text x="357" y="50">6</text><text x="398" y="50">7</text>
           </g>
-          <text x="164" y="102">Explore</text><text x="260" y="102">Learn</text><text x="356" y="102">Best policy</text>
         </svg>
-        <h2>Press Run and watch him learn</h2>
-        <ol class="how-to-steps">
-          <li><strong>Explore.</strong> Harty makes <span data-fill="tries">3</span> tries with random moves. Each try is an <span class="term">episode</span>. It ends at the treasure, in a hole, or after <span data-fill="moves">50</span> moves.</li>
-          <li><strong>Learn.</strong> He makes a <span class="term">policy</span>: one move for every square. He scores it, improves it, and repeats until it stops changing. The arrows under Harty's policy show it.</li>
-          <li><strong>Best policy.</strong> He follows his best policy to the treasure.</li>
+        <h2>Press Run for a lesson</h2>
+        <ol class="how-to-steps is-short">
+          <li><strong>The maze:</strong> states, actions and rewards.</li>
+          <li><strong>Random moves:</strong> what happens with no plan.</li>
+          <li><strong>Score the plan:</strong> <span class="term">policy</span> evaluation.</li>
+          <li><strong>Improve the plan:</strong> policy improvement.</li>
+          <li><strong>Repeat</strong> until the policy stops changing.</li>
+          <li><strong>The best policy,</strong> from any square.</li>
+          <li><strong>The discount:</strong> patient or short-sighted?</li>
         </ol>
-        <p class="how-to-tip">1×, 2× and 4× change the speed. Stop takes you back to building.</p>
+        <p class="how-to-tip">Harty waits for you: press Next (or the → key) when the class is ready. Back goes back, and Stop returns to building.</p>
       </section>
 
       <section class="how-to-page" hidden>
@@ -1440,7 +1490,7 @@
   <script>
     // WHAT'S IN THIS SCRIPT, IN ORDER
     //   Rules you can change: grid size, the how-to guide, portals, animations, rewards,
-    //     discount, move limit, pace, wall builders, and the example mazes
+    //     discount, move limit, the lesson's discounts and pace, wall builders, example mazes
     //   Drawing sizes, the maze data (walls and pieces), and what the student is doing
     //   Small helpers, then changing the maze: placing, moving, removing, Undo, size, examples
     //   Building walls with dots, and with wall shapes
@@ -1448,7 +1498,7 @@
     //   Little effects, the shelf, and Harty's speech bubble
     //   Listening to fingers, mice and keyboards
     //   The learning engine (policy iteration, matching src/policy_iteration.py)
-    //   Running: the story the Run button plays, and Harty's policy map
+    //   The lesson: what the Run button starts, step by step, like the HartyMazeSolver notebook
     //   How to play: the guide for students
     //   Start: what happens when the page opens
 
@@ -1501,22 +1551,26 @@
     const REWARD_HOLE = -1;             // falling into a hole
     const REWARD_STEP = 0;              // any other move
     const DISCOUNT = 0.9;               // the notebook's DISCOUNT_RATE (gamma): closer to 1 = more patient
-    const MAX_MOVES_PER_ATTEMPT = 50;   // an attempt is cut off after this many moves, then Harty starts again
-    const RANDOM_ATTEMPTS = 3;          // ASSUMPTION: 3 random tries before Harty starts planning
+    const MAX_MOVES_PER_ATTEMPT = 50;   // an episode is cut off after this many moves
     const MAX_LEARNING_ROUNDS = 100;    // safety limit, like max_cycles in the notebook
     const EVALUATION_SWEEPS = 200;      // like n_eval_sweeps in the notebook
     const EVALUATION_TOLERANCE = 1e-3;  // like tol in the notebook: scores that change less than this have settled
     const RANDOM_SEED = null;           // null = different random moves every Run; a number like 0 = the same every time
 
+    // The discounts the class can try in the last step of the lesson.
+    // ASSUMPTION: 0.5 and 0.99 as well as 0.9, the values the notebook's "What to try next" suggests.
+    const LESSON_DISCOUNTS = [0.5, 0.9, 0.99];
+
     // =====================================================================
-    // PACE OF A RUN (times are for 1× speed; the 2× and 4× buttons divide them)
+    // PACE OF THE LESSON (times are for 1× speed; the 2× and 4× buttons divide them)
+    // The lesson waits for Next before every step, so these only set how fast things move.
     // =====================================================================
 
-    const MOVE_TIME_MS = 340;               // one move while Harty follows a plan
+    const MOVE_TIME_MS = 340;               // one move while Harty follows a policy
     const RANDOM_MOVE_TIME_MS = 260;        // one move while he wanders at random...
     const RANDOM_MOVES_AT_FULL_TIME = 12;   // ...after this many, the rest of that wander plays 3× faster
-    const READING_TIME_MS = 1800;           // the shortest time each thing Harty says stays up...
-    const READING_TIME_PER_WORD_MS = 260;   // ...plus this much for every word, so the class can read it
+    const SWEEP_TIME_MS = 450;              // one sweep of policy evaluation (the values spreading out)...
+    const SWEEPS_TIME_LIMIT_MS = 5000;      // ...but all the sweeps of one evaluation take at most this long
 
     // ASSUMPTION: a move that bumps into a wall still counts as one of the moves (Harty stays
     // where he is), like simulate_path() in src/animation.py.
@@ -1661,7 +1715,7 @@
     // The board is drawn in its own units and then stretched to fit the screen.
     const CELL = 100;                                 // width of one square
     const MARGIN = 48;                                // space around the maze for the outer dots and the A B C / 1 2 3 labels
-    const DOT_TAP_RADIUS = 28;                        // how close to a dot a tap has to be
+    const DOT_TAP_RADIUS = 31;                        // how close to a dot a tap has to be
     const DRAG_START_DISTANCE = 8;                    // pixels a finger must move before a tap becomes a drag
     const TAP_WOBBLE = 24;                            // a drag that ends this close to where it started still counts as a tap
     const UNDO_LIMIT = 50;                            // how many steps Undo remembers
@@ -1747,17 +1801,21 @@
     const runButton = document.querySelector("#run");
     const runIcon = document.querySelector("#run-icon");
     const runLabel = document.querySelector("#run-label");
-    const phaseItems = [...document.querySelectorAll(".phases li")];
-    const learnLabel = document.querySelector("#learn-label");
+    const lessonSteps = document.querySelector("#lesson-steps");
+    const lessonCount = document.querySelector("#lesson-count");
+    const lessonTitle = document.querySelector("#lesson-title");
+    const lessonText = document.querySelector("#lesson-text");
+    const lessonExample = document.querySelector("#lesson-example");
+    const lessonTools = document.querySelector("#lesson-tools");
+    const valueLegend = document.querySelector("#value-legend");
+    const lessonBack = document.querySelector("#lesson-back");
+    const lessonNext = document.querySelector("#lesson-next");
+    const walkPanel = document.querySelector("#walk-panel");
     const attemptName = document.querySelector("#attempt-name");
     const attemptMoves = document.querySelector("#attempt-moves");
     const movesBar = document.querySelector("#moves-bar");
     const movesFill = document.querySelector("#moves-fill");
-    const attemptLog = document.querySelector("#attempt-log");
     const speedButtons = [...document.querySelectorAll(".speed")];
-    const backButton = document.querySelector("#back-to-building");
-    const planMap = document.querySelector("#plan-map");
-    const planCaption = document.querySelector("#plan-caption");
     const rlLoop = document.querySelector("#rl-loop");
     const rlState = document.querySelector("#rl-state");
     const rlAction = document.querySelector("#rl-action");
@@ -2742,7 +2800,8 @@
       board.classList.toggle("is-stamping", holding !== null && holding.type === "shape");
       board.classList.toggle("builder-shapes", wallBuilder === "shapes");
       board.classList.toggle("is-running", run !== null);
-      boardWrap.inert = run !== null;      // nothing on the board can be touched while Harty runs
+      // Nothing on the board can be touched during the lesson, except on its "start anywhere" slide.
+      boardWrap.inert = run !== null && run.slides[run.slide]?.onSquare === undefined;
       // Redrawing would restart the always-on movements from the beginning, which looks jumpy.
       // Starting them "this far in" keeps them flowing smoothly instead.
       board.style.setProperty("--phase", `${-(performance.now() % 12000)}ms`);
@@ -2771,6 +2830,9 @@
           addSvg("rect", { x: x + 7, y: y + 7, width: CELL - 14, height: CELL - 14, rx: 12, class: "cell-target" }, group);
         }
       }
+
+      // During the lesson: each state's value color (see THE LESSON). Its arrow goes on top of the pieces.
+      addSvg("g", { id: "lesson-layer", class: "lesson-layer" });
 
       // 2. The outer border. It is drawn every time and never stored as walls.
       addSvg("rect", { x: MARGIN, y: MARGIN, width: span, height: span, rx: 10, class: "border" });
@@ -2806,6 +2868,9 @@
 
       // 6. Pieces.
       for (const [key, piece] of pieces) drawPiece(key, piece);
+
+      // During the lesson: each state's policy arrow, on top of the pieces so a portal can't hide it.
+      addSvg("g", { id: "lesson-arrows", class: "lesson-arrows" });
 
       // One-way portals get an arrow on top of the pieces, so a piece can't hide it.
       if (!PORTALS_WORK_BOTH_WAYS) {
@@ -2860,6 +2925,7 @@
       justPlaced = new Set();
       justBuilt = new Set();
 
+      if (run !== null) drawLessonView();
       if (focusedId !== null) document.getElementById(focusedId)?.focus();
     }
 
@@ -3276,6 +3342,10 @@
     }
 
     board.addEventListener("pointerdown", (event) => {
+      if (run !== null) {
+        tapDuringLesson(cellAt(event.clientX, event.clientY));
+        return;
+      }
       const thing = event.target.closest("[data-kind]");
       startPress(event, thing === null ? { kind: "board" } : { ...thing.dataset });
     });
@@ -3330,6 +3400,13 @@
     board.addEventListener("keydown", (event) => {
       const thing = event.target.closest("[data-kind]");
       if (thing === null) return;
+      if (run !== null) {
+        if ((event.key === "Enter" || event.key === " ") && thing.dataset.cell) {
+          event.preventDefault();
+          tapDuringLesson(thing.dataset.cell);
+        }
+        return;
+      }
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
         const cell = thing.dataset.cell ?? null;
@@ -3350,6 +3427,10 @@
       if (event.key === "Escape" && run !== null) {
         leaveRun();
         note("Stopped. Back to building.");
+      } else if (run !== null && event.key === "ArrowRight") {
+        nextSlide();
+      } else if (run !== null && event.key === "ArrowLeft") {
+        previousSlide();
       } else if (event.key === "Escape") {
         stopEverything();
         note("");
@@ -3507,11 +3588,12 @@
       return { next, reward, done: isEnd(maze, next), blocked, portalFrom };
     }
 
-    // Walk from the start square until the treasure, a hole, or the move limit.
+    // Walk from a square (Harty's start square unless "from" says another) until the treasure,
+    // a hole, or the move limit.
     // "chooseMove" decides each move: at random, or by reading a plan.
-    function simulateAttempt(maze, chooseMove) {
+    function simulateAttempt(maze, chooseMove, from = maze.start) {
       const moves = [];
-      let cell = maze.start;
+      let cell = from;
       while (moves.length < MAX_MOVES_PER_ATTEMPT) {
         const action = chooseMove(cell);
         const step = maze.steps[cell][action];
@@ -3570,7 +3652,10 @@
     // A move's score is the reward it gets now, plus the discounted score of following
     // the plan from wherever it lands. Each square depends on its neighbors, so we sweep
     // the whole maze again and again until the scores stop changing.
-    function scorePlan(maze, plan) {
+    // "discount" is normally DISCOUNT; the last step of the lesson tries others.
+    // If "sweeps" is a list, the scores after every sweep are added to it, so the lesson
+    // can show the values spreading out.
+    function scorePlan(maze, plan, discount = DISCOUNT, sweeps = null) {
       let scores = blankScores(maze);
       for (let sweep = 0; sweep < EVALUATION_SWEEPS; sweep += 1) {
         const newScores = blankScores(maze);
@@ -3582,11 +3667,12 @@
             // Landing on the treasure or a hole ends the attempt, so only that reward counts.
             newScores[cell][action] = step.done
               ? step.reward
-              : step.reward + DISCOUNT * scores[step.next][plan[step.next]];
+              : step.reward + discount * scores[step.next][plan[step.next]];
             biggestChange = Math.max(biggestChange, Math.abs(newScores[cell][action] - scores[cell][action]));
           }
         }
         scores = newScores;
+        if (sweeps !== null) sweeps.push(scores);
         if (biggestChange < EVALUATION_TOLERANCE) break;
       }
       return scores;
@@ -3616,20 +3702,45 @@
 
     // The whole learning loop (policy_iteration in the notebook): start with a random plan,
     // then score it and improve it, round after round, until the plan stops changing.
-    // Every round is kept, so the story and the plan map can show it step by step.
-    function learn(maze, random) {
+    // Every round is kept (the plan it scored, every sweep, and the better plan it made),
+    // so the lesson can show it step by step.
+    function learn(maze, random, discount = DISCOUNT) {
       const firstPlan = randomPlan(maze, random);
       let plan = firstPlan;
       const rounds = [];
       for (let number = 1; number <= MAX_LEARNING_ROUNDS; number += 1) {
-        const scores = scorePlan(maze, plan);
+        const sweeps = [];
+        const scores = scorePlan(maze, plan, discount, sweeps);
         const better = improvePlan(maze, scores, plan, random);
         const changedCells = Object.keys(better).filter((cell) => better[cell] !== plan[cell]);
-        rounds.push({ number, scores, plan: better, changed: changedCells.length, changedCells });
+        rounds.push({ number, scored: plan, scores, sweeps, plan: better, changed: changedCells.length, changedCells });
         plan = better;
         if (changedCells.length === 0) break;
       }
       return { firstPlan, rounds };
+    }
+
+    // The value of every square for a random walker, who picks every action with the same chance
+    // (uniform_random_policy_value in the notebook, with its 200 sweeps and tolerance of 1e-6).
+    // The notebook shows it as its "before learning" picture, and so does the lesson.
+    function randomWalkValues(maze, discount = DISCOUNT) {
+      let values = Object.fromEntries(maze.cells.map((cell) => [cell, 0]));
+      for (let sweep = 0; sweep < 200; sweep += 1) {
+        const newValues = {};
+        let biggestChange = 0;
+        for (const cell of maze.cells) {
+          newValues[cell] = 0;
+          if (isEnd(maze, cell)) continue;
+          for (const action of ACTIONS) {
+            const step = maze.steps[cell][action];
+            newValues[cell] += (step.done ? step.reward : step.reward + discount * values[step.next]) / ACTIONS.length;
+          }
+          biggestChange = Math.max(biggestChange, Math.abs(newValues[cell] - values[cell]));
+        }
+        values = newValues;
+        if (biggestChange < 1e-6) break;
+      }
+      return values;
     }
 
     // A random number maker that can be "seeded": the same seed always gives the same numbers.
@@ -3647,45 +3758,50 @@
     }
 
     // =====================================================================
-    // RUNNING: the story the Run button plays
-    //   1. Harty wanders at random a few times. Each try is cut off after MAX_MOVES_PER_ATTEMPT.
-    //   2. Harty learns. Each round scores his plan and improves it, then he tries it out.
-    //   3. Harty walks his best plan, leaving paw prints.
+    // THE LESSON: what the Run button starts
+    // Harty teaches reinforcement learning on the student's own maze, one step at a time, in the
+    // same order as the HartyMazeSolver notebook. He waits for Next before every step:
+    //   1. The maze: states, actions and rewards
+    //   2. Random moves: an episode with no plan, and what a random walker can expect
+    //   3. Score the plan: a random policy, then policy evaluation
+    //   4. Improve the plan: policy improvement
+    //   5. Repeat until the policy stops changing (this is policy iteration)
+    //   6. The best policy: Harty follows it from his start square, or from any square
+    //   7. The discount: try other discounts and see what changes
+    // Each step has one or more "slides". A slide says what Harty says, what the panel explains,
+    // what the maze shows (values and arrows) and what moves (Harty walking, values spreading).
     // =====================================================================
 
-    let run = null;          // the run on screen, or null while building
+    const LESSON_STEPS = ["The maze", "Random moves", "Score the plan", "Improve the plan", "Repeat", "The best policy", "The discount"];
+
+    let run = null;          // the lesson on screen, or null while building
     let runSpeed = 1;        // 1, 2 or 4, from the speed buttons
 
-    // Thrown to stop the story part-way through when the student presses Stop.
+    // Thrown to cut a movement short when the class moves to another slide or presses Stop.
     class RunStopped extends Error {}
 
-    // Called between every step of the story: if this run has been stopped, end it here.
-    function checkpoint(thisRun) {
-      if (run !== thisRun) throw new RunStopped();
+    // A slide's movements belong to a "play". Leaving the slide cancels its play, and the
+    // movement stops at its next checkpoint.
+    function checkpoint(play) {
+      if (play.cancelled || run !== play.run) throw new RunStopped();
     }
 
-    // Pause the story. Times are written for 1× speed.
-    async function wait(thisRun, ms) {
+    // Pause. Times are written for 1× speed.
+    async function wait(play, ms) {
       await new Promise((resolve) => setTimeout(resolve, ms / runSpeed));
-      checkpoint(thisRun);
-    }
-
-    // Wait long enough for the class to read what Harty is saying. Longer messages wait longer.
-    async function pauseToRead(thisRun) {
-      const words = `${coachSay.textContent} ${coachNote.textContent}`.split(/\s+/).filter(Boolean).length;
-      await wait(thisRun, READING_TIME_MS + words * READING_TIME_PER_WORD_MS);
+      checkpoint(play);
     }
 
     // Play a movement on Harty and wait until it is done. Times are written for 1× speed.
     // With "reduce motion" switched on, it just waits instead of moving.
-    async function act(thisRun, element, keyframes, ms, options = {}) {
+    async function act(play, element, keyframes, ms, options = {}) {
       if (calmMotion) {
-        await wait(thisRun, ms);
+        await wait(play, ms);
         return null;
       }
       const movement = element.animate(keyframes, { duration: ms / runSpeed, easing: "ease-in-out", ...options });
       await movement.finished.catch(() => {});
-      checkpoint(thisRun);
+      checkpoint(play);
       return movement;
     }
 
@@ -3718,39 +3834,49 @@
         if (problem.reachable) glowReachable(problem.reachable);
         return;
       }
-      if (run !== null) leaveRun();          // "Again" starts a fresh run
+      if (run !== null) leaveRun();
       stopEverything();
-      const thisRun = { maze: snapshotMaze(), random: makeRandom(RANDOM_SEED), runner: null, rounds: null, finished: false };
-      run = thisRun;
-      attemptLog.replaceChildren();
-      setPhase("random");
-      learnLabel.textContent = "Learn";
-      showAttempt("Getting ready", 0);
-      clearLoop(true);
-      runSay = "Here I go!";
+      const maze = snapshotMaze();
+      // The learning and the random walks use separate random numbers, so watching another
+      // random walk never changes the policies the lesson shows.
+      const seed = (offset) => (RANDOM_SEED === null ? null : RANDOM_SEED + offset);
+      const learning = learn(maze, makeRandom(seed(0)));
+      run = {
+        maze,
+        learning,
+        randomValues: randomWalkValues(maze),
+        walkRandom: makeRandom(seed(1)),
+        discountLearning: new Map([[DISCOUNT, learning]]),   // step 7 learns again for each discount tried
+        seed,
+        walks: 0,               // how many random walks the class has watched
+        runner: null,
+        numbers: null,
+        marks: null,
+        play: null,
+        slides: [],
+        slide: 0,
+        view: blankView()
+      };
+      run.slides = buildSlides(run);
       note("");
+      runSay = "";
+      run.runner = makeRunner();
+      run.numbers = addSvg("g", { class: "lesson-numbers" }, effects);   // values, on top of Harty
+      run.marks = addSvg("g", { class: "lesson-marks" }, effects);       // labels for one slide
       refresh();
-      thisRun.runner = makeRunner();
-      standAt(thisRun.runner, thisRun.maze.start);
-      drawPlanMap(thisRun.maze);
-      tellStory(thisRun).catch((problem) => {
-        if (problem instanceof RunStopped) return;    // the student pressed Stop: nothing went wrong
-        // Anything else is a bug. Unlock the board so the student isn't stuck, and report it.
-        leaveRun();
-        note("Something went wrong, so I stopped. Try Run again.", true);
-        console.error(problem);
-      });
+      goToSlide(0);
     }
 
-    // Stop running (or finish watching) and go back to building.
+    // Stop the lesson and go back to building.
     function leaveRun() {
       if (run === null) return;
-      const { runner } = run;
+      const { runner, numbers, marks, play } = run;
+      if (play !== null) play.cancelled = true;
       run = null;
-      if (runner !== null) {
-        runner.group.remove();
-        runner.trail.remove();
-      }
+      runner?.group.remove();
+      runner?.trail.remove();
+      numbers?.remove();
+      marks?.remove();
       runSay = "";
       refresh();
     }
@@ -3760,195 +3886,576 @@
       updateCoach();
     }
 
-    async function tellStory(thisRun) {
-      const { maze, random } = thisRun;
+    // ---------- Moving through the lesson ----------
 
-      // Part 1: explore at random. There is no policy yet, so the policy map has no arrows.
-      setPhase("random");
-      hartySays("I'm the agent, and this maze is my environment.");
-      note("Every move: I'm in a state, I pick an action, and I get a reward.");
-      showPlanCaption("No policy yet. I'm picking random actions.");
-      await pauseToRead(thisRun);
-      hartySays("First I'll explore by picking random actions.");
-      note("");
-      await pauseToRead(thisRun);
-      for (let number = 1; number <= RANDOM_ATTEMPTS; number += 1) {
-        note(`Episode ${number} of ${RANDOM_ATTEMPTS}, with random actions.`);
-        const attempt = simulateAttempt(maze, () => randomMove(random));
-        await playAttempt(thisRun, attempt, `Random ${number}`, false, false);
-        hartySays({
-          treasure: "Lucky! Reward +1, and the episode is over.",
-          hole: "Ouch, a hole! Reward −1, and the episode is over.",
-          out: `${MAX_MOVES_PER_ATTEMPT} moves and no reward. The episode is cut off.`
-        }[attempt.outcome]);
-        note(number === 1 ? "An episode is one try, from my start square until it ends." : "");
-        logAttempt(`Random ${number}`, attempt);
-        await pauseToRead(thisRun);
+    // Show one slide: stop whatever the last one was doing, then set this one up.
+    function goToSlide(index) {
+      const slide = run.slides[index];
+      run.slide = index;
+      const play = startPlay();
+      run.view = blankView();
+      hartySays(slide.say);
+      note(slide.note ?? "");
+      showLessonText(slide);
+      showTools(slide);
+      slide.show?.(play);
+      drawLessonView();
+      // While Harty isn't walking, his thought cloud shows his policy's arrow for his own square.
+      if (run.view.arrows !== null) think(run.runner, ARROWS[run.view.arrows[run.maze.start]]);
+      updateLessonNav();
+      letClassTapMaze(slide.onSquare !== undefined);
+      if (slide.play) slide.play(play).catch(stopQuietly);
+    }
+
+    // A fresh play for the slide on screen: the last one stops, Harty goes back to his start
+    // square, and anything the last movement drew is cleared away.
+    function startPlay() {
+      if (run.play !== null) run.play.cancelled = true;
+      const play = { run, cancelled: false };
+      run.play = play;
+      const { runner, maze } = run;
+      for (const element of [runner.group, runner.body]) element.getAnimations().forEach((movement) => movement.cancel());
+      runner.trail.replaceChildren();
+      run.marks.replaceChildren();
+      face(runner, null);
+      stopThinking(runner);
+      standAt(runner, maze.start);
+      showWalkPanel(false);
+      return play;
+    }
+
+    // Start a new movement on the slide on screen, for buttons like "Another random try".
+    function replay(movement) {
+      const play = startPlay();
+      movement(play).catch(stopQuietly);
+    }
+
+    function stopQuietly(problem) {
+      if (problem instanceof RunStopped) return;    // the class moved on: nothing went wrong
+      // Anything else is a bug. Go back to building so the class isn't stuck, and report it.
+      leaveRun();
+      note("Something went wrong, so I stopped. Try Run again.", true);
+      console.error(problem);
+    }
+
+    // Only the "start anywhere" slide lets the class tap the maze while the lesson is on.
+    function letClassTapMaze(allowed) {
+      boardWrap.inert = !allowed;
+      board.querySelectorAll(".cell").forEach((cell) => cell.setAttribute("tabindex", allowed ? "0" : "-1"));
+    }
+
+    function tapDuringLesson(cell) {
+      const slide = run.slides[run.slide];
+      if (cell !== null && slide.onSquare) slide.onSquare(cell);
+    }
+
+    // The numbered steps along the top of the lesson panel. Each one jumps to its first slide.
+    const lessonStepButtons = LESSON_STEPS.map((name, index) => {
+      const item = document.createElement("li");
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "lesson-step";
+      button.title = name;
+      const mark = document.createElement("span");
+      mark.textContent = index + 1;
+      button.append(mark);
+      button.setAttribute("aria-label", `Step ${index + 1}: ${name}`);
+      button.addEventListener("click", () => {
+        if (run !== null) goToSlide(run.slides.findIndex((slide) => slide.step === index + 1));
+      });
+      item.append(button);
+      lessonSteps.append(item);
+      return button;
+    });
+
+    function showLessonText(slide) {
+      lessonStepButtons.forEach((button, index) => {
+        const step = index + 1;
+        button.classList.toggle("is-now", step === slide.step);
+        button.classList.toggle("is-done", step < slide.step);
+        button.firstElementChild.textContent = step < slide.step ? "✓" : String(step);
+        button.setAttribute("aria-current", step === slide.step ? "step" : "false");
+      });
+      lessonCount.textContent = `Step ${slide.step} of ${LESSON_STEPS.length}`;
+      lessonTitle.textContent = slide.title ?? LESSON_STEPS[slide.step - 1];
+      lessonText.innerHTML = slide.text;   // written in this file, with <b> around the new words
+      showExample(null);
+    }
+
+    // The worked example under the explanation, or nothing with null.
+    // While Harty walks, the walking panel takes its place, so the panel never gets too tall.
+    function showExample(text) {
+      lessonExample.textContent = text ?? "";
+      lessonExample.hidden = text === null || !walkPanel.hidden;
+    }
+
+    function showWalkPanel(shown) {
+      walkPanel.hidden = !shown;
+      lessonExample.hidden = shown || lessonExample.textContent === "";
+    }
+
+    // The slide's own buttons, like "Another random try".
+    function showTools(slide) {
+      lessonTools.replaceChildren();
+      if (slide.toolsLabel) {
+        const label = document.createElement("span");
+        label.className = "lesson-tools-label";
+        label.textContent = slide.toolsLabel;
+        lessonTools.append(label);
       }
-
-      // Part 2: policy iteration. Evaluate the policy, improve it, and repeat.
-      setPhase("learn");
-      const { firstPlan, rounds } = learn(maze, random);
-      thisRun.rounds = rounds;
-      hartySays("Random actions are hopeless. I need a policy!");
-      note("A policy says which action to take in every state. Mine starts out random.");
-      showPlan(firstPlan, []);
-      pickPlanSquare(null);
-      showPlanCaption("Policy 0: a random action in every state.");
-      await pauseToRead(thisRun);
-      hartySays("I know the maze's rules, so I can plan without walking.");
-      note("This is policy iteration: evaluate my policy, improve it, and repeat.");
-      await pauseToRead(thisRun);
-
-      const lastChange = rounds.filter((round) => round.changed > 0).pop();
-      let planBeingScored = firstPlan;
-      let lastRoute = null;
-      let lastRoutePlan = 0;
-      let explainedSpreading = false;
-      let lastScored = null;             // last round's values, so the example can follow what changed
-      for (const round of rounds) {
-        const first = round.number === 1;
-        setPhase("learn", round.number);
-        showRound(round.number);
-
-        // Step 1, policy evaluation: the value of every state under the current policy.
-        // The map's colors change, and one state shows how its value was worked out.
-        hartySays(first ? "Round 1, step 1: policy evaluation." : `Round ${round.number}: evaluate my policy.`);
-        note(first ? "A state's value is the reward I can expect from there. Blue is good, red is bad." : "");
-        showScores(round.scores, planBeingScored);
-        const valueExample = evaluationExample(maze, round.scores, planBeingScored, lastScored);
-        lastScored = { scores: round.scores, plan: planBeingScored };
-        pickPlanSquare(valueExample.cell);
-        showPlanCaption(valueExample.text);
-        await pauseToRead(thisRun);
-
-        if (round.changed === 0) {
-          hartySays("My policy didn't change, so it's the optimal policy!");
-          note("Policy iteration is finished.");
-          showPlan(round.plan, []);
-          pickPlanSquare(null);
-          showPlanCaption("The optimal policy. Tap a state to see its value.");
-          await pauseToRead(thisRun);
-          break;
-        }
-
-        // Step 2, policy improvement: in every state, switch to the action with the best value.
-        // One changed state shows the values of its four actions.
-        const changedText = `${round.changed} state${round.changed === 1 ? "" : "s"} changed.`;
-        hartySays(first ? "Step 2: policy improvement." : `Then I improve it. ${changedText}`);
-        note(first ? `In every state I switch to the action with the best value. ${changedText}` : "");
-        showPlan(round.plan, round.changedCells);
-        glowSquares(round.changedCells);
-        const choiceExample = improvementExample(maze, round.scores, round.changedCells, planBeingScored, round.plan);
-        pickPlanSquare(choiceExample.cell);
-        showPlanCaption(choiceExample.text);
-        planBeingScored = round.plan;
-        await pauseToRead(thisRun);
-        if (round === lastChange) continue;  // the optimal policy gets walked in part 3
-
-        const attempt = simulateAttempt(maze, (cell) => round.plan[cell]);
-        if (lastRoute !== null && sameRoute(attempt, lastRoute)) {
-          hartySays("My route from the start is still the same.");
-          note(explainedSpreading ? "" : "Good values spread out from the treasure a little further each round.");
-          explainedSpreading = true;
-          logSameRoute(round.number, lastRoutePlan);
-          await pauseToRead(thisRun);
-          continue;
-        }
-        hartySays(`Let me try policy ${round.number}.`);
-        note("");
-        await playAttempt(thisRun, attempt, `Policy ${round.number}`, true, false);
-        hartySays({
-          treasure: `Policy ${round.number} reaches the treasure in ${attempt.moves.length} moves. Return +1!`,
-          hole: `Policy ${round.number} walks me into a hole. Return −1.`,
-          out: `Policy ${round.number} sends me round in circles. Return 0.`
-        }[attempt.outcome]);
-        logAttempt(`Policy ${round.number}`, attempt);
-        lastRoute = attempt;
-        lastRoutePlan = round.number;
-        await pauseToRead(thisRun);
+      for (const tool of slide.tools ?? []) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "lesson-tool";
+        button.textContent = tool.label;
+        if (tool.pressed !== undefined) button.setAttribute("aria-pressed", String(tool.pressed));
+        button.addEventListener("click", () => {
+          if (run === null) return;
+          if (tool.pressed !== undefined) {
+            lessonTools.querySelectorAll(".lesson-tool").forEach((other) => other.setAttribute("aria-pressed", String(other === button)));
+          }
+          tool.action();
+        });
+        lessonTools.append(button);
       }
+      lessonTools.hidden = lessonTools.childElementCount === 0;
+    }
 
-      // Part 3: follow the optimal policy, leaving paw prints.
-      setPhase("best");
-      hartySays("Now I just follow my optimal policy.");
-      note("Watch my paw prints.");
-      const bestPlan = rounds[rounds.length - 1].plan;
-      showPlan(bestPlan, []);
-      pickPlanSquare(null);
-      showPlanCaption("The optimal policy. Tap a state to see its value.");
-      await pauseToRead(thisRun);
-      const attempt = simulateAttempt(maze, (cell) => bestPlan[cell]);
-      await playAttempt(thisRun, attempt, "Best policy", true, true);
-      logAttempt("Best policy", attempt, null, true);
-      if (attempt.outcome === "treasure") {
-        hartySays(`Return +1 in ${attempt.moves.length} moves. I learned the way!`);
-        note("Press Again to watch it all again.");
-        confetti(cellCenter(maze.treasure), 40);
+    function updateLessonNav() {
+      lessonBack.disabled = run.slide === 0;
+      lessonNext.textContent = run.slide === run.slides.length - 1 ? "Finish" : "Next";
+    }
+
+    function nextSlide() {
+      if (run === null) return;
+      if (run.slide === run.slides.length - 1) {
+        leaveRun();
+        note("That's policy iteration! Change the maze and press Run again.");
       } else {
-        hartySays("Even my best policy can't reach the treasure.");
-        note("Check there's a way through the walls.");
+        goToSlide(run.slide + 1);
       }
-      thisRun.finished = true;
-      updateRunButton();
     }
 
-    // Numbers as students read them: +1, −1, 0, or values like 0.73.
-    function formatReward(reward) {
-      return reward > 0 ? `+${reward}` : reward < 0 ? `−${Math.abs(reward)}` : "0";
+    function previousSlide() {
+      if (run !== null && run.slide > 0) goToSlide(run.slide - 1);
     }
 
-    function formatValue(value) {
-      if (Math.abs(value - Math.round(value)) < 0.005) return formatReward(Math.round(value)).replace("+", "");
-      return value.toFixed(2).replace("-", "−");
-    }
+    lessonNext.addEventListener("click", nextSlide);
+    lessonBack.addEventListener("click", previousSlide);
 
-    // A worked example of policy evaluation for one state, with this round's real numbers.
-    // It prefers a state whose value just changed (so the example follows the good values as
-    // they spread), and whose action leads to another state that has a value, so the
-    // "reward + 0.9 × next value" part shows.
-    function evaluationExample(maze, scores, plan, previous) {
-      const states = [maze.start, ...maze.cells.filter((cell) => cell !== maze.start && !isEnd(maze, cell))];
-      const valueOf = (table, policy, cell) => table[cell][policy[cell]];
-      const leadsOn = (cell) => {
-        const step = maze.steps[cell][plan[cell]];
-        return !step.done && Math.abs(valueOf(scores, plan, step.next)) > 0.005;
-      };
-      const justChanged = (cell) => previous !== null && Math.abs(valueOf(scores, plan, cell) - valueOf(previous.scores, previous.plan, cell)) > 0.005;
-      const cell = states.find((state) => leadsOn(state) && justChanged(state))
-        ?? states.find(leadsOn)
-        ?? states.find((state) => maze.steps[state][plan[state]].done)
-        ?? maze.start;
-      const action = plan[cell];
-      const step = maze.steps[cell][action];
-      if (step.done) {
-        return { cell, text: `${squareName(cell)}: going ${action} ${step.reward > 0 ? "reaches the treasure" : "falls into a hole"}, so its value is ${formatReward(step.reward)}.` };
+    // ---------- The slides ----------
+
+    function buildSlides(run) {
+      const { maze, learning } = run;
+      const { firstPlan, rounds } = learning;
+      const firstRound = rounds[0];
+      const lastRound = rounds[rounds.length - 1];
+      const bestPlan = lastRound.plan;
+      const slides = [];
+      const add = (step, slide) => slides.push({ step, ...slide });
+      const plural = (count, word) => `${count} ${word}${count === 1 ? "" : "s"}`;
+
+      // 1. The maze
+      add(1, {
+        say: "This maze is my environment, and I'm the agent.",
+        note: "Press Next when you're ready.",
+        text: "In reinforcement learning, an <b>agent</b> learns by trying things in an <b>environment</b>. Each square Harty can stand on is a <b>state</b>.",
+        show: () => markStates(maze)
+      });
+      add(1, {
+        say: "In every state I can take 4 actions.",
+        note: "Watch me try each one.",
+        text: "The <b>actions</b> are up, down, left and right. A wall or the edge of the maze blocks a move, and then Harty stays where he is.",
+        show: () => showExample(actionsText(maze, maze.start)),
+        play: tryActions
+      });
+      add(1, {
+        say: "Rewards tell me how well I'm doing.",
+        text: `Every move earns a <b>reward</b>: ${formatReward(REWARD_TREASURE)} at the treasure, ${formatReward(REWARD_HOLE)} in a hole, ${formatReward(REWARD_STEP)} for any other move. The treasure or a hole ends the try. One try is called an <b>episode</b>.` +
+          (maze.portals.size > 0 ? " A portal sends Harty straight to its partner." : ""),
+        show: () => markRewards(maze)
+      });
+
+      // 2. Random moves
+      // ASSUMPTION: one random episode at a time, so the class can follow every move;
+      // "Another random try" shows more.
+      add(2, {
+        say: "I don't know the way yet, so I'll pick random actions.",
+        note: "Watch the panel: state, action, reward, next state.",
+        text: `With no plan, Harty picks a random action for every move. An episode ends at the treasure, in a hole, or after ${MAX_MOVES_PER_ATTEMPT} moves. The <b>return</b> is all its rewards added up.`,
+        tools: [{ label: "Another random try", action: () => replay(walkAtRandom) }],
+        play: walkAtRandom
+      });
+      add(2, {
+        say: "Moving at random, most squares aren't worth much.",
+        text: `The number on each square is its <b>value</b>: the return a random walker gets from there, on average. A reward that comes later counts less (${DISCOUNT} times as much for each extra move), so even a square next to the treasure is worth less than ${formatReward(REWARD_TREASURE)}. Purple is good, red is bad. Only squares near the treasure are purple, so random moves are a poor plan.`,
+        show: () => {
+          run.view.values = run.randomValues;
+          const startValue = run.randomValues[maze.start];
+          showExample(`${squareName(maze.start)}, where Harty starts, is worth ${formatValue(startValue)}: ${Math.abs(startValue) < 0.005 ? "on average, random moves from here earn almost nothing." : startValue > 0 ? "on average, random moves from here end up a little ahead." : "on average, random moves from here lose more than they win."}`);
+        }
+      });
+
+      // 3. Score the plan
+      add(3, {
+        say: "Instead, I'll make a plan: one action for every state.",
+        text: "A plan like this is called a <b>policy</b>. Harty starts with a random one: an arrow in every state. This is policy 0.",
+        show: () => { run.view.arrows = firstPlan; }
+      });
+      add(3, {
+        say: "Now I score my policy.",
+        note: "Watch the values spread out, one sweep at a time.",
+        text: `<b>Policy evaluation</b> gives every state a value by following its arrow: value = reward + ${DISCOUNT} × the value of the next state. Each sweep over the maze lets the values spread one square further.`,
+        show: () => { run.view.arrows = firstPlan; },
+        play: (play) => playSweeps(play, firstRound, null)
+      });
+
+      // 4. Improve the plan
+      add(4, {
+        say: "In every state, which action is best?",
+        text: `For each of the four actions, Harty adds its reward to ${DISCOUNT} × the value of where it leads. <b>Policy improvement</b> then switches every state to its best action.`,
+        show: () => {
+          run.view.values = valuesOf(firstRound.scores, firstPlan);
+          run.view.arrows = firstPlan;
+          compareActions(maze, firstRound, firstPlan);
+        }
+      });
+      add(4, {
+        say: firstRound.changed === 0 ? "Nothing changed: policy 0 was already the best!" : `${plural(firstRound.changed, "state")} changed action!`,
+        text: "Every arrow now points to its state's best action. The orange arrows are the ones that changed. This is policy 1.",
+        show: () => {
+          run.view.values = valuesOf(firstRound.scores, firstPlan);
+          run.view.arrows = firstRound.plan;
+          run.view.changed = firstRound.changedCells;
+          showExample(changedText(firstRound));
+        },
+        play: async () => glowSquares(lessonStates(maze).filter((cell) => firstRound.changedCells.includes(cell)))
+      });
+
+      // 5. Repeat: score and improve again, until nothing changes
+      const skip = { label: "Skip to the best policy", action: () => goToSlide(slides.findIndex((slide) => slide.isOptimal)) };
+      for (const round of rounds.slice(1)) {
+        const number = round.number;
+        const before = rounds[number - 2];
+        add(5, {
+          say: `Round ${number}: I score policy ${number - 1}.`,
+          text: "The same two steps again: score the policy, then improve it. Every round, good values reach further from the treasure.",
+          show: () => { run.view.arrows = round.scored; },
+          play: (play) => playSweeps(play, round, { scores: before.scores, plan: before.scored }),
+          tools: [walkTool(round.scored, `Policy ${number - 1}`), skip]
+        });
+        if (round.changed > 0) {
+          add(5, {
+            say: `${plural(round.changed, "state")} changed. This is policy ${number}.`,
+            text: "The orange arrows changed. Harty keeps going until a round changes nothing.",
+            show: () => {
+              run.view.values = valuesOf(round.scores, round.scored);
+              run.view.arrows = round.plan;
+              run.view.changed = round.changedCells;
+              showExample(changedText(round));
+            },
+            play: async () => glowSquares(lessonStates(maze).filter((cell) => round.changedCells.includes(cell))),
+            tools: [walkTool(round.plan, `Policy ${number}`), skip]
+          });
+        }
       }
-      const via = step.portalFrom !== null ? ", through the portal" : "";
-      return { cell, text: `${squareName(cell)}: value = ${step.reward} + ${DISCOUNT} × ${formatValue(valueOf(scores, plan, step.next))} (the value of ${squareName(step.next)}${via}) = ${formatValue(scores[cell][action])}` };
+      add(5, {
+        isOptimal: true,
+        say: "No arrows changed, so my policy is optimal!",
+        text: "When improving changes nothing, no other action is better in any state: the policy is <b>optimal</b>. Scoring and improving until nothing changes is called <b>policy iteration</b>.",
+        show: () => {
+          run.view.values = valuesOf(lastRound.scores, bestPlan);
+          run.view.arrows = bestPlan;
+          showExample(`It took ${plural(rounds.length, "round")} of scoring and improving.`);
+        }
+      });
+
+      // 6. The best policy
+      const walkBest = (play) => walkPolicy(play, bestPlan, "Best policy");
+      add(6, {
+        say: "Now I just follow my optimal policy!",
+        text: "Harty follows the arrows from his start square. No more guessing!",
+        show: () => {
+          run.view.values = valuesOf(lastRound.scores, bestPlan);
+          run.view.arrows = bestPlan;
+        },
+        play: walkBest,
+        tools: [{ label: "Watch again", action: () => replay(walkBest) }]
+      });
+      add(6, {
+        say: "Tap any square, and I'll start from there.",
+        note: "Tap a square on the maze.",
+        text: "A policy has an action for every state, so Harty knows the way from anywhere, not only from his start square.",
+        show: () => {
+          run.view.values = valuesOf(lastRound.scores, bestPlan);
+          run.view.arrows = bestPlan;
+        },
+        onSquare: (cell) => {
+          if (!lessonStates(maze).includes(cell)) {
+            note("Pick a square without the treasure or a hole.", true);
+            return;
+          }
+          note("");
+          replay((play) => walkPolicy(play, bestPlan, `From ${squareName(cell)}`, cell));
+        }
+      });
+
+      // 7. The discount
+      const discounts = [...new Set([...LESSON_DISCOUNTS, DISCOUNT])].sort((a, b) => a - b);
+      add(7, {
+        say: "How much do I care about rewards that come later?",
+        text: `The <b>discount</b> is how much a reward one move later is worth. Harty used ${DISCOUNT}. Try others: a low discount makes him short-sighted, one close to 1 makes him patient.`,
+        show: (play) => showDiscount(play, DISCOUNT),
+        toolsLabel: "Discount:",
+        tools: discounts.map((discount) => ({
+          label: String(discount),
+          pressed: discount === DISCOUNT,
+          action: () => replay(async (play) => {
+            const plan = showDiscount(play, discount);
+            await walkPolicy(play, plan, `Discount ${discount}`);
+          })
+        }))
+      });
+      return slides;
     }
 
-    // A worked example of policy improvement: one changed state compares its four actions.
-    // It prefers a state with one clear winner, so "best" really means best.
-    function improvementExample(maze, scores, changedCells, oldPlan, newPlan) {
-      const clearWinner = (cell) => {
-        const best = scores[cell][newPlan[cell]];
-        return ACTIONS.every((action) => action === newPlan[cell] || scores[cell][action] < best - 0.005);
-      };
-      const ordered = changedCells.includes(maze.start) ? [maze.start, ...changedCells.filter((cell) => cell !== maze.start)] : changedCells;
-      const cell = ordered.find(clearWinner) ?? ordered[0];
-      const values = ACTIONS.map((action) => `${action} ${formatValue(scores[cell][action])}`).join(", ");
-      const choice = clearWinner(cell)
-        ? `Best action: ${newPlan[cell]} (it was ${oldPlan[cell]}).`
-        : `Several actions tie, so I picked ${newPlan[cell]} (it was ${oldPlan[cell]}).`;
-      return { cell, text: `${squareName(cell)}: ${values}. ${choice}` };
+    // "Changed: B2, C4." for a round of policy improvement (or nothing when nothing changed).
+    function changedText(round) {
+      return round.changed === 0 ? null : `Changed: ${round.changedCells.map(squareName).join(", ")}.`;
     }
 
-    function sameRoute(a, b) {
-      return a.moves.length === b.moves.length && a.moves.every((step, index) => step.action === b.moves[index].action);
+    // A button that makes Harty walk one of the policies from his start square.
+    function walkTool(plan, name) {
+      return { label: `Walk ${name.toLowerCase()}`, action: () => replay((play) => walkPolicy(play, plan, name)) };
     }
 
-    // ---------- Harty on the move ----------
+    // ---------- What the maze shows during the lesson ----------
+    // Each state gets a color for its value (purple good, red bad, like the notebook's
+    // pictures), its value in the corner, and an arrow for its action in the policy.
+
+    const VALUE_COLORS_GOOD = ["#f1efe9", "#ddd6ef", "#b9acdd", "#8f7cc4", "#5f45a7"];
+    const VALUE_COLORS_BAD = ["#f1efe9", "#f8d6cd", "#f0a596", "#e2705f", "#c8463a"];
+    // The colors are darkest at the biggest reward (1, with the usual rewards).
+    const VALUE_SCALE = Math.max(Math.abs(REWARD_TREASURE), Math.abs(REWARD_HOLE), Math.abs(REWARD_STEP)) || 1;
+    const ANGLES = { up: 0, right: 90, down: 180, left: 270 };
+    let lessonSquares = new Map();   // state -> its drawings: { group, tint, arrow, value, angle }
+
+    function blankView() {
+      return { values: null, arrows: null, changed: [], picked: null, comparing: null };
+    }
+
+    // The squares where Harty picks an action: every square except the treasure and holes.
+    // (Portal squares count too: after going through a portal, Harty stands on its partner.)
+    function lessonStates(maze) {
+      return maze.cells.filter((cell) => !isEnd(maze, cell));
+    }
+
+    // The value of every state under a policy: the score of the action the policy picks there.
+    function valuesOf(scores, plan) {
+      const values = {};
+      for (const cell of Object.keys(plan)) values[cell] = scores[cell][plan[cell]];
+      return values;
+    }
+
+    // Draw run.view on the maze. The drawings are made once, then changed in place,
+    // so colors fade and arrows turn smoothly from one slide to the next.
+    function drawLessonView() {
+      const layer = board.querySelector("#lesson-layer");
+      if (run === null || layer === null) return;
+      if (layer.childElementCount === 0) makeLessonSquares(layer);
+      const { values, arrows, changed, picked, comparing } = run.view;
+      for (const [cell, square] of lessonSquares) {
+        const value = values === null || values[cell] === undefined ? null : values[cell];
+        square.tint.style.fill = value === null ? "" : valueColor(value);
+        square.value.textContent = value === null || cell === comparing ? "" : formatValue(value);
+        square.value.classList.toggle("is-light", value !== null && Math.abs(value) / VALUE_SCALE > 0.6);
+        if (arrows !== null) {
+          // Turn the short way round (a quarter turn, not three quarters).
+          const turn = ((ANGLES[arrows[cell]] - square.angle) % 360 + 540) % 360 - 180;
+          square.angle += turn;
+          square.arrow.style.transform = `rotate(${square.angle}deg)`;
+        }
+        square.arrow.classList.toggle("is-shown", arrows !== null && cell !== comparing);
+        square.arrow.classList.toggle("is-changed", changed.includes(cell));
+        square.group.classList.toggle("is-picked", cell === picked);
+      }
+      valueLegend.hidden = values === null;
+    }
+
+    // Each state's drawings live in three layers: its color under the walls, its arrow over the
+    // pieces, and its value over Harty (so he never hides it).
+    function makeLessonSquares(layer) {
+      lessonSquares = new Map();
+      const arrows = board.querySelector("#lesson-arrows");
+      run.numbers.replaceChildren();
+      for (const cell of lessonStates(run.maze)) {
+        const { row, column } = readKey(cell);
+        const x = MARGIN + column * CELL;
+        const y = MARGIN + row * CELL;
+        const group = addSvg("g", { class: "lesson-square" }, layer);
+        const tint = addSvg("rect", { x: x + 7, y: y + 7, width: CELL - 14, height: CELL - 14, rx: 10, class: "lesson-tint" }, group);
+        addSvg("rect", { x: x + 7, y: y + 7, width: CELL - 14, height: CELL - 14, rx: 10, class: "lesson-pick" }, group);
+        const middle = addSvg("g", { transform: `translate(${x + CELL / 2} ${y + CELL / 2})` }, arrows);
+        const arrow = addSvg("g", { class: "lesson-arrow" }, middle);
+        addSvg("use", { href: "#plan-arrow", x: -19, y: -19, width: 38, height: 38 }, arrow);
+        const value = addSvg("text", { x: x + CELL - 13, y: y + CELL - 14, class: "lesson-value" }, run.numbers);
+        lessonSquares.set(cell, { group, tint, arrow, value, angle: 0 });
+      }
+    }
+
+    function valueColor(value) {
+      const colors = value >= 0 ? VALUE_COLORS_GOOD : VALUE_COLORS_BAD;
+      const position = Math.min(1, Math.abs(value) / VALUE_SCALE) * (colors.length - 1);
+      const low = Math.floor(position);
+      const high = Math.min(colors.length - 1, low + 1);
+      return mixColors(colors[low], colors[high], position - low);
+    }
+
+    // Blend two colors written like "#2a78d6". amount 0 gives the first, 1 gives the second.
+    function mixColors(first, second, amount) {
+      const channels = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+      const a = channels(first);
+      const b = channels(second);
+      const mixed = a.map((value, i) => Math.round(value + (b[i] - value) * amount));
+      return `rgb(${mixed.join(", ")})`;
+    }
+
+    // A small label on top of the maze, for one slide (like "+1" over the treasure).
+    function markLabel(point, text, kind, small = false) {
+      const group = addSvg("g", { class: `mark-label ${kind}${small ? " is-small" : ""}`, transform: `translate(${point.x} ${point.y})` }, run.marks);
+      const width = small ? 6 + text.length * 8 : 14 + text.length * 9;
+      const height = small ? 22 : 24;
+      addSvg("rect", { x: -width / 2, y: -height / 2, width, height, rx: height / 2 }, group);
+      addSvg("text", { x: 0, y: 1 }, group).textContent = text;
+    }
+
+    // Step 1: a dashed outline on every state.
+    function markStates(maze) {
+      for (const cell of lessonStates(maze)) {
+        const { row, column } = readKey(cell);
+        addSvg("rect", { x: MARGIN + column * CELL + 12, y: MARGIN + row * CELL + 12, width: CELL - 24, height: CELL - 24, rx: 12, class: "mark-state" }, run.marks);
+      }
+    }
+
+    // Step 1: the reward for landing on the treasure and on each hole.
+    function markRewards(maze) {
+      const above = (cell) => ({ x: cellCenter(cell).x, y: cellCenter(cell).y - 34 });
+      markLabel(above(maze.treasure), formatReward(REWARD_TREASURE), "is-good");
+      for (const hole of maze.holes) markLabel(above(hole), formatReward(REWARD_HOLE), "is-bad");
+    }
+
+    function actionsText(maze, cell) {
+      const { row, column } = readKey(cell);
+      const moves = ACTIONS.map((action) => {
+        const [rowStep, columnStep] = STEPS[action];
+        const offTheMaze = row + rowStep < 0 || row + rowStep >= gridSize || column + columnStep < 0 || column + columnStep >= gridSize;
+        const what = !maze.steps[cell][action].blocked ? "is open" : offTheMaze ? "hits the edge" : "hits a wall";
+        return `${ARROWS[action]} ${action} ${what}`;
+      });
+      return `From ${squareName(cell)}: ${moves.join(", ")}.`;
+    }
+
+    // Step 1: Harty tries each action from his square: a lean where he can go, a bump where he can't.
+    async function tryActions(play) {
+      const { maze, runner } = play.run;
+      await wait(play, 600);
+      for (const action of ACTIONS) {
+        face(runner, action);
+        think(runner, ARROWS[action]);
+        if (maze.steps[maze.start][action].blocked) await bump(play, maze.start, action, 520);
+        else await lean(play, maze.start, action, 520);
+        await wait(play, 380);
+      }
+      face(runner, null);
+      stopThinking(runner);
+    }
+
+    // Step 4: the four actions' values for one state, the best one in yellow.
+    function compareActions(maze, round, oldPlan) {
+      const example = improvementExample(maze, round.scores, round.changedCells, oldPlan, round.plan);
+      run.view.picked = example.cell;
+      run.view.comparing = example.cell;
+      const center = cellCenter(example.cell);
+      const spots = { up: [0, -31], down: [0, 31], left: [-28, 0], right: [28, 0] };
+      for (const action of ACTIONS) {
+        const [dx, dy] = spots[action];
+        markLabel({ x: center.x + dx, y: center.y + dy }, formatValue(round.scores[example.cell][action]), action === round.plan[example.cell] ? "is-best" : "is-plain", true);
+      }
+      showExample(example.text);
+    }
+
+    // Policy evaluation, sweep by sweep: the values spread out from the treasure and the holes.
+    async function playSweeps(play, round, previous) {
+      const { sweeps, scored } = round;
+      const time = Math.min(SWEEP_TIME_MS, SWEEPS_TIME_LIMIT_MS / sweeps.length);
+      // Every evaluation starts from values of 0, like policy_evaluation() in the notebook.
+      play.run.view.values = valuesOf(blankScores(play.run.maze), scored);
+      drawLessonView();
+      showExample("Every value starts at 0.");
+      for (const [index, scores] of sweeps.entries()) {
+        await wait(play, time);
+        play.run.view.values = valuesOf(scores, scored);
+        drawLessonView();
+        showExample(`Sweep ${index + 1} of ${sweeps.length}`);
+      }
+      await wait(play, 600);
+      const example = evaluationExample(play.run.maze, round.scores, scored, previous);
+      play.run.view.picked = example.cell;
+      drawLessonView();
+      showExample(example.text);
+    }
+
+    // Step 7: learn again with another discount, and show the values and policy it gives.
+    // Gives back that policy.
+    function showDiscount(play, discount) {
+      const { maze, discountLearning } = play.run;
+      if (!discountLearning.has(discount)) discountLearning.set(discount, learn(maze, makeRandom(play.run.seed(0)), discount));
+      const { rounds } = discountLearning.get(discount);
+      const last = rounds[rounds.length - 1];
+      play.run.view.values = valuesOf(last.scores, last.plan);
+      play.run.view.arrows = last.plan;
+      drawLessonView();
+      const attempt = simulateAttempt(maze, (cell) => last.plan[cell]);
+      // Show tiny values in full (like 0.0039), so "almost nothing" doesn't read as nothing.
+      const value = last.scores[maze.start][last.plan[maze.start]];
+      const startValue = value !== 0 && Math.abs(value) < 0.005 ? value.toPrecision(2).replace("-", "−") : formatValue(value);
+      showExample(attempt.outcome === "treasure"
+        ? `Discount ${discount}: Harty's start square is worth ${startValue}, and he still reaches the treasure in ${attempt.moves.length} moves.`
+        : `Discount ${discount}: far from the treasure every value is almost 0, so Harty can't tell which way to go.`);
+      return last.plan;
+    }
+
+    // ---------- Harty walking ----------
+
+    // Step 2: one episode of random moves.
+    async function walkAtRandom(play) {
+      play.run.walks += 1;
+      const attempt = simulateAttempt(play.run.maze, () => randomMove(play.run.walkRandom));
+      await wait(play, 500);
+      const total = await playAttempt(play, attempt, `Random try ${play.run.walks}`, false, false);
+      hartySays({
+        treasure: `Lucky! I found the treasure. Return ${formatReward(total)}.`,
+        hole: `Ouch, a hole! The episode is over. Return ${formatReward(total)}.`,
+        out: `${MAX_MOVES_PER_ATTEMPT} moves and no treasure. Return ${formatReward(total)}.`
+      }[attempt.outcome]);
+    }
+
+    // Harty follows a policy, from his start square unless "from" says another one.
+    async function walkPolicy(play, plan, name, from = play.run.maze.start) {
+      const { maze } = play.run;
+      const attempt = simulateAttempt(maze, (cell) => plan[cell], from);
+      await wait(play, 400);
+      const total = await playAttempt(play, attempt, name, true, true, from);
+      const moves = attempt.moves.length;
+      if (attempt.outcome === "treasure") confetti(cellCenter(maze.treasure), 30);
+      hartySays({
+        treasure: `${name}: the treasure in ${moves} move${moves === 1 ? "" : "s"}. Return ${formatReward(total)}!`,
+        hole: `${name} walks me into a hole. Return ${formatReward(total)}.`,
+        out: `${name} sends me round in circles. Return ${formatReward(total)}.`
+      }[attempt.outcome]);
+      // On slides with a worked example, it comes back once the walk is over.
+      if (lessonExample.textContent !== "") showWalkPanel(false);
+    }
 
     // While running, Harty is a separate drawing on the effects layer that walks between squares.
     function makeRunner() {
@@ -3988,13 +4495,15 @@
       runner.art.setAttribute("href", action === null ? "#piece-harty" : `#harty-${action}`);
     }
 
-    // One attempt: Harty pops up on the start square and makes every move in order.
-    async function playAttempt(thisRun, attempt, name, followsPlan, leaveTrail) {
-      checkpoint(thisRun);
+    // One episode: Harty pops up on his first square and makes every move in order, while the
+    // panel shows the reinforcement learning loop. Gives back the return (all rewards added up).
+    async function playAttempt(play, attempt, name, followsPlan, leaveTrail, from = play.run.maze.start) {
+      checkpoint(play);
+      showWalkPanel(true);
       showAttempt(name, 0);
       clearLoop(false);
-      await restart(thisRun);
-      const visited = new Set([thisRun.maze.start]);
+      await restart(play, from);
+      const visited = new Set([from]);
       let goingInCircles = false;
       let total = 0;                         // the return: all the rewards of this episode added up
       for (const [index, step] of attempt.moves.entries()) {
@@ -4006,40 +4515,39 @@
         const hurried = goingInCircles || (!followsPlan && index >= RANDOM_MOVES_AT_FULL_TIME);
         if (hurried) time /= 3;
         // Before each move Harty "thinks": a random pick, or the action his policy says.
-        think(thisRun.runner, followsPlan ? ARROWS[step.action] : "?");
-        await playMove(thisRun, step, time, leaveTrail);
+        think(play.run.runner, followsPlan ? ARROWS[step.action] : "?");
+        await playMove(play, step, time, leaveTrail);
         total += step.reward;
         showStep(step, total);
         if (!hurried || step.reward !== 0) rewardPop(step.next, step.reward);
         visited.add(step.next);
         showAttempt(name, index + 1);
       }
-      stopThinking(thisRun.runner);
-      await playOutcome(thisRun, attempt);
+      stopThinking(play.run.runner);
+      await playOutcome(play, attempt, from);
+      return total;
     }
 
-    async function playMove(thisRun, step, time, leaveTrail) {
-      checkpoint(thisRun);
-      const { runner } = thisRun;
+    async function playMove(play, step, time, leaveTrail) {
+      checkpoint(play);
+      const { runner } = play.run;
       face(runner, step.action);
       if (step.blocked) {
-        await bump(thisRun, step.from, step.action, time);
+        await bump(play, step.from, step.action, time);
       } else {
         if (leaveTrail) pawPrint(runner.trail, step.from, step.action);
-        movePlanDot(step.portalFrom ?? step.next);
-        await hop(thisRun, step.from, step.portalFrom ?? step.next, time);
+        await hop(play, step.from, step.portalFrom ?? step.next, time);
       }
-      if (step.portalFrom !== null) await teleport(thisRun, step.portalFrom, step.next, time);
-      movePlanDot(step.next);
+      if (step.portalFrom !== null) await teleport(play, step.portalFrom, step.next, time);
     }
 
     // A little hop from one square to the next.
-    async function hop(thisRun, from, to, time) {
+    async function hop(play, from, to, time) {
       const a = cellCenter(from);
       const b = cellCenter(to);
       const at = (x, y) => `translate(${x - 50}px, ${y - 50}px)`;
-      standAt(thisRun.runner, to);
-      await act(thisRun, thisRun.runner.group, [
+      standAt(play.run.runner, to);
+      await act(play, play.run.runner.group, [
         { transform: at(a.x, a.y) },
         { transform: at((a.x + b.x) / 2, (a.y + b.y) / 2 - 14) },
         { transform: at(b.x, b.y) }
@@ -4047,60 +4555,73 @@
     }
 
     // Bumping into a wall: a push toward it, a "bonk", and back again.
-    async function bump(thisRun, cell, action, time) {
+    async function bump(play, cell, action, time) {
       const center = cellCenter(cell);
       const [rowStep, columnStep] = STEPS[action];
       const home = `translate(${center.x - 50}px, ${center.y - 50}px)`;
       const pushed = `translate(${center.x - 50 + columnStep * 20}px, ${center.y - 50 + rowStep * 20}px)`;
       bonk({ x: center.x + columnStep * 46, y: center.y + rowStep * 46 }, time * 0.4 / runSpeed);
-      await act(thisRun, thisRun.runner.group, [{ transform: home }, { transform: pushed, offset: 0.4 }, { transform: home }], time);
+      await act(play, play.run.runner.group, [{ transform: home }, { transform: pushed, offset: 0.4 }, { transform: home }], time);
+    }
+
+    // Leaning toward a neighboring square and back: "I could go this way".
+    async function lean(play, cell, action, time) {
+      const center = cellCenter(cell);
+      const [rowStep, columnStep] = STEPS[action];
+      const home = `translate(${center.x - 50}px, ${center.y - 50}px)`;
+      const leaning = `translate(${center.x - 50 + columnStep * 40}px, ${center.y - 50 + rowStep * 40}px)`;
+      await act(play, play.run.runner.group, [{ transform: home }, { transform: leaning, offset: 0.5 }, { transform: home }], time);
     }
 
     // Through a portal: Harty spins down to nothing, then spins out of the partner portal.
-    async function teleport(thisRun, from, to, time) {
-      const { runner, maze } = thisRun;
+    async function teleport(play, from, to, time) {
+      const { runner, maze } = play.run;
       const color = maze.portalColors.get(from);
       ripple(cellCenter(from), color);
-      const vanish = await act(thisRun, runner.body, [{ transform: "scale(1) rotate(0deg)" }, { transform: "scale(0) rotate(320deg)" }], time * 1.5, { easing: "ease-in", fill: "forwards" });
+      const vanish = await act(play, runner.body, [{ transform: "scale(1) rotate(0deg)" }, { transform: "scale(0) rotate(320deg)" }], time * 1.5, { easing: "ease-in", fill: "forwards" });
       standAt(runner, to);
       vanish?.cancel();
       ripple(cellCenter(to), color);
-      await act(thisRun, runner.body, [{ transform: "scale(0) rotate(-320deg)" }, { transform: "scale(1) rotate(0deg)" }], time * 1.5, { easing: "ease-out" });
+      await act(play, runner.body, [{ transform: "scale(0) rotate(-320deg)" }, { transform: "scale(1) rotate(0deg)" }], time * 1.5, { easing: "ease-out" });
     }
 
-    // Every attempt starts again from the start square, with a little pop.
-    async function restart(thisRun) {
-      const { runner, maze } = thisRun;
+    // Every episode starts with a little pop on its first square.
+    async function restart(play, from) {
+      const { runner } = play.run;
       runner.body.getAnimations().forEach((movement) => movement.cancel());
       face(runner, null);
-      standAt(runner, maze.start);
-      movePlanDot(maze.start);
-      await act(thisRun, runner.body, [{ transform: "scale(0)" }, { transform: "scale(1.15)", offset: 0.7 }, { transform: "scale(1)" }], 320, { easing: "ease-out" });
+      standAt(runner, from);
+      await act(play, runner.body, [{ transform: "scale(0)" }, { transform: "scale(1.15)", offset: 0.7 }, { transform: "scale(1)" }], 320, { easing: "ease-out" });
     }
 
-    // How an attempt ends: a happy jump, a fall into a hole, or a dizzy fade when the moves run out.
-    async function playOutcome(thisRun, attempt) {
-      checkpoint(thisRun);
-      const { runner, maze } = thisRun;
+    // How an episode ends: a happy jump, a fall into a hole, or a dizzy shake when the moves run
+    // out. After a fall or a shake Harty pops back up on his first square, so he never stays hidden.
+    async function playOutcome(play, attempt, from) {
+      checkpoint(play);
+      const { runner, maze } = play.run;
       const last = attempt.moves[attempt.moves.length - 1];
       if (attempt.outcome === "treasure") {
         face(runner, null);
         sparkles(cellCenter(maze.treasure));
-        await act(thisRun, runner.body, [
+        await act(play, runner.body, [
           { transform: "none" }, { transform: "translateY(-20px)" }, { transform: "none" },
           { transform: "translateY(-10px)" }, { transform: "none" }
         ], 700);
-      } else if (attempt.outcome === "hole") {
+        return;
+      }
+      if (attempt.outcome === "hole") {
         dirt(cellCenter(last.next));
-        await act(thisRun, runner.body, [{ transform: "scale(1) rotate(0deg)" }, { transform: "scale(0) rotate(540deg)" }], 650, { easing: "ease-in", fill: "forwards" });
+        await act(play, runner.body, [{ transform: "scale(1) rotate(0deg)" }, { transform: "scale(0) rotate(540deg)" }], 650, { easing: "ease-in", fill: "forwards" });
       } else {
         face(runner, null);
-        await act(thisRun, runner.body, [
+        await act(play, runner.body, [
           { transform: "rotate(0deg)" }, { transform: "rotate(-12deg)" }, { transform: "rotate(10deg)" },
           { transform: "rotate(-6deg)" }, { transform: "rotate(0deg)" }
         ], 600);
-        await act(thisRun, runner.body, [{ opacity: 1 }, { opacity: 0 }], 300, { fill: "forwards" });
+        await act(play, runner.body, [{ opacity: 1 }, { opacity: 0 }], 300, { fill: "forwards" });
       }
+      await wait(play, 500);
+      await restart(play, from);
     }
 
     // A paw print on the square Harty just left, pointing the way he went.
@@ -4111,7 +4632,7 @@
       playOn(paw, [{ opacity: 0 }, { opacity: 1 }], { duration: 300 });
     }
 
-    // Squares whose move changed in this round of learning glow for a moment.
+    // Squares whose action changed in this round of learning glow for a moment.
     function glowSquares(cells) {
       for (const cell of cells) {
         const { row, column } = readKey(cell);
@@ -4158,142 +4679,6 @@
       }
     }
 
-    // ---------- Harty's plan: the small map in the side panel ----------
-
-    const MAP_CELL = 40;                 // size of one square on the plan map, in its own units
-    const ANGLES = { up: 0, right: 90, down: 180, left: 270 };
-    // Score colors: gray means 0, blue leads toward the treasure (+1), red leads into a hole (-1).
-    // Each side gets steadily darker, so the color shows how good or how bad a square is.
-    const SCORE_COLORS_GOOD = ["#f0efec", "#cde2fb", "#9ec5f4", "#5598e7", "#2a78d6"];
-    const SCORE_COLORS_BAD = ["#f0efec", "#fbd9d4", "#f5aca3", "#ec7a70", "#e34948"];
-    let planSquares = new Map();         // square -> { tint, arrow, angle, move, score }
-    let planDot = null;
-
-    // Draw the plan map once at the start of a run: squares, walls, the treasure, holes and portals.
-    // The arrows and colors are then changed in place, so they can turn and fade smoothly.
-    function drawPlanMap(maze) {
-      planMap.replaceChildren();
-      const size = gridSize * MAP_CELL;
-      planMap.setAttribute("viewBox", `-3 -3 ${size + 6} ${size + 6}`);
-      planMap.classList.add("no-plan");
-      planSquares = new Map();
-      for (const cell of maze.cells) {
-        const { row, column } = readKey(cell);
-        const x = column * MAP_CELL;
-        const y = row * MAP_CELL;
-        const group = addSvg("g", { class: "map-cell", "data-cell": cell }, planMap);
-        const tint = addSvg("rect", { x, y, width: MAP_CELL, height: MAP_CELL, class: "map-tint" }, group);
-        let arrow = null;
-        if (cell === maze.treasure) {
-          addSvg("use", { href: "#piece-treasure", x, y, width: MAP_CELL, height: MAP_CELL }, group);
-        } else if (maze.holes.has(cell)) {
-          addSvg("use", { href: "#piece-hole", x, y, width: MAP_CELL, height: MAP_CELL }, group);
-        } else {
-          if (maze.portalColors.has(cell)) {
-            addSvg("circle", { cx: x + MAP_CELL / 2, cy: y + MAP_CELL / 2, r: 16, class: "map-portal", stroke: maze.portalColors.get(cell) }, group);
-          }
-          const middle = addSvg("g", { transform: `translate(${x + MAP_CELL / 2} ${y + MAP_CELL / 2})` }, group);
-          arrow = addSvg("g", { class: "map-arrow" }, middle);
-          addSvg("use", { href: "#plan-arrow", x: -11, y: -11, width: 22, height: 22 }, arrow);
-        }
-        planSquares.set(cell, { tint, arrow, angle: 0, move: null, score: 0 });
-      }
-      for (let index = 1; index < gridSize; index += 1) {
-        addSvg("line", { x1: index * MAP_CELL, y1: 0, x2: index * MAP_CELL, y2: size, class: "map-grid" }, planMap);
-        addSvg("line", { x1: 0, y1: index * MAP_CELL, x2: size, y2: index * MAP_CELL, class: "map-grid" }, planMap);
-      }
-      // The same walls as the board, shrunk down to the map.
-      const toMap = (value) => (value - MARGIN) / CELL * MAP_CELL;
-      for (const key of maze.walls) {
-        const line = lineForWall(key);
-        addSvg("line", { x1: toMap(line.x1), y1: toMap(line.y1), x2: toMap(line.x2), y2: toMap(line.y2), class: "map-wall" }, planMap);
-      }
-      addSvg("rect", { x: 0, y: 0, width: size, height: size, rx: 3, class: "map-border" }, planMap);
-      planDot = addSvg("g", { class: "map-harty" }, planMap);
-      addSvg("circle", { cx: 0, cy: 0, r: 8 }, planDot);
-      movePlanDot(maze.start);
-    }
-
-    // Point every arrow at the plan's move. Arrows in "changed" are colored orange.
-    function showPlan(plan, changed) {
-      planMap.classList.remove("no-plan");
-      for (const [cell, square] of planSquares) {
-        if (square.arrow === null) continue;
-        // Turn the short way round (a quarter turn, not three quarters).
-        const turn = ((ANGLES[plan[cell]] - square.angle) % 360 + 540) % 360 - 180;
-        square.angle += turn;
-        square.move = plan[cell];
-        square.arrow.style.transform = `rotate(${square.angle}deg)`;
-        square.arrow.classList.toggle("is-changed", changed.includes(cell));
-      }
-    }
-
-    // Color every square by its score under the plan being scored.
-    function showScores(scores, plan) {
-      for (const [cell, square] of planSquares) {
-        if (square.arrow === null) continue;     // the treasure and holes keep their own picture
-        square.score = scores[cell][plan[cell]];
-        square.tint.style.fill = scoreColor(square.score);
-      }
-    }
-
-    function scoreColor(score) {
-      const colors = score >= 0 ? SCORE_COLORS_GOOD : SCORE_COLORS_BAD;
-      const position = Math.min(1, Math.abs(score)) * (colors.length - 1);
-      const low = Math.floor(position);
-      const high = Math.min(colors.length - 1, low + 1);
-      return mixColors(colors[low], colors[high], position - low);
-    }
-
-    // Blend two colors written like "#2a78d6". amount 0 gives the first, 1 gives the second.
-    function mixColors(first, second, amount) {
-      const channels = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
-      const a = channels(first);
-      const b = channels(second);
-      const mixed = a.map((value, i) => Math.round(value + (b[i] - value) * amount));
-      return `rgb(${mixed.join(", ")})`;
-    }
-
-    function movePlanDot(cell) {
-      if (planDot === null) return;
-      const { row, column } = readKey(cell);
-      planDot.style.transform = `translate(${(column + 0.5) * MAP_CELL}px, ${(row + 0.5) * MAP_CELL}px)`;
-    }
-
-    function showPlanCaption(text) {
-      planCaption.textContent = text;
-    }
-
-    // Outline one state on the policy map (or none, with null).
-    function pickPlanSquare(cell) {
-      planMap.querySelectorAll(".map-cell.is-picked").forEach((picked) => picked.classList.remove("is-picked"));
-      if (cell !== null) planMap.querySelector(`.map-cell[data-cell="${cell}"]`)?.classList.add("is-picked");
-    }
-
-    // Tap (or point at) a square on the plan map to read its score and move.
-    function explainSquare(event) {
-      const group = event.target.closest(".map-cell");
-      if (group === null || run === null) return;
-      planMap.querySelectorAll(".map-cell.is-picked").forEach((picked) => picked.classList.remove("is-picked"));
-      group.classList.add("is-picked");
-      const cell = group.dataset.cell;
-      const square = planSquares.get(cell);
-      if (cell === run.maze.treasure) {
-        showPlanCaption(`${squareName(cell)}: the treasure (reward +1).`);
-      } else if (run.maze.holes.has(cell)) {
-        showPlanCaption(`${squareName(cell)}: a hole (reward \u22121).`);
-      } else if (square.move === null) {
-        showPlanCaption(`${squareName(cell)}: no policy yet.`);
-      } else {
-        showPlanCaption(`${squareName(cell)}: value ${formatValue(square.score)}, action ${square.move}.`);
-      }
-    }
-
-    planMap.addEventListener("click", explainSquare);
-    planMap.addEventListener("pointermove", (event) => {
-      if (event.pointerType === "mouse") explainSquare(event);
-    });
-
     // When there is no way to the treasure, the squares Harty can reach glow for a moment.
     function glowReachable(cells) {
       for (const cell of cells) {
@@ -4304,27 +4689,73 @@
       }
     }
 
-    // ---------- The run panel on the right ----------
+    // ---------- Numbers and worked examples ----------
 
-    function setPhase(name, roundNumber = null) {
-      const now = ["random", "learn", "best"].indexOf(name);
-      phaseItems.forEach((item, index) => {
-        item.classList.toggle("is-now", index === now);
-        item.classList.toggle("is-done", index < now);
-        item.querySelector(".phase-mark").textContent = index < now ? "✓" : String(index + 1);
-      });
-      if (roundNumber !== null) learnLabel.textContent = `Round ${roundNumber}`;
+    // Numbers as students read them: +1, −1, 0, or rewards like −0.04 (rounded to 2 decimals).
+    function formatReward(reward) {
+      const rounded = Math.round(reward * 100) / 100;
+      return rounded > 0 ? `+${rounded}` : rounded < 0 ? `−${Math.abs(rounded)}` : "0";
     }
 
-    function showRound(number) {
-      attemptName.textContent = `Round ${number}`;
-      attemptMoves.textContent = "Evaluating and improving";
-      movesFill.style.width = "0%";
-      movesBar.classList.remove("is-late");
-      clearLoop(true);
+    // Values as students read them: 1, −1, 0, or values like 0.73.
+    function formatValue(value) {
+      if (Math.abs(value - Math.round(value)) < 0.005) return formatReward(Math.round(value)).replace("+", "");
+      return value.toFixed(2).replace("-", "−");
     }
 
-    // Fill in the reinforcement learning loop for the move Harty just made.
+    // A worked example of policy evaluation for one state, with this round's real numbers.
+    // It prefers a state whose action leads to another state that has a value, so the
+    // "reward + 0.9 × next value" part shows, and keeps away from Harty's own square.
+    function evaluationExample(maze, scores, plan, previous) {
+      const others = lessonStates(maze).filter((cell) => cell !== maze.start);
+      const states = [...others, maze.start];
+      const valueOf = (table, policy, cell) => table[cell][policy[cell]];
+      const leadsOn = (cell) => {
+        const step = maze.steps[cell][plan[cell]];
+        return !step.done && Math.abs(valueOf(scores, plan, step.next)) > 0.005;
+      };
+      const justChanged = (cell) => previous !== null && Math.abs(valueOf(scores, plan, cell) - valueOf(previous.scores, previous.plan, cell)) > 0.005;
+      if (states.every((state) => Math.abs(valueOf(scores, plan, state)) < 0.005)) {
+        return { cell: null, text: "None of these arrows lead to the treasure or a hole, so every value stays 0." };
+      }
+      const cell = states.find((state) => leadsOn(state) && justChanged(state))
+        ?? states.find(leadsOn)
+        ?? states.find((state) => maze.steps[state][plan[state]].done)
+        ?? maze.start;
+      const action = plan[cell];
+      const step = maze.steps[cell][action];
+      if (step.done) {
+        return { cell, text: `${squareName(cell)}: going ${action} ${step.reward > 0 ? "reaches the treasure" : "falls into a hole"}, so its value is ${formatReward(step.reward)}.` };
+      }
+      const via = step.portalFrom !== null ? ", through the portal" : "";
+      return { cell, text: `${squareName(cell)}: value = ${formatReward(step.reward)} + ${DISCOUNT} × ${formatValue(valueOf(scores, plan, step.next))} (the value of ${squareName(step.next)}${via}) = ${formatValue(scores[cell][action])}` };
+    }
+
+    // A worked example of policy improvement: one state compares its four actions.
+    // It prefers a state whose action changed and that has one clear winner, and keeps away
+    // from Harty's own square and from portals, so nothing hides the numbers.
+    function improvementExample(maze, scores, changedCells, oldPlan, newPlan) {
+      const states = lessonStates(maze);
+      const changed = states.filter((cell) => changedCells.includes(cell));
+      const candidates = changed.length > 0 ? changed : states;
+      const busy = (cell) => cell === maze.start || maze.portalColors.has(cell);
+      const ordered = [...candidates.filter((cell) => !busy(cell)), ...candidates.filter(busy)];
+      const clearWinner = (cell) => {
+        const best = scores[cell][newPlan[cell]];
+        return ACTIONS.every((action) => action === newPlan[cell] || scores[cell][action] < best - 0.005);
+      };
+      const cell = ordered.find(clearWinner) ?? ordered[0];
+      const values = ACTIONS.map((action) => `${action} ${formatValue(scores[cell][action])}`).join(", ");
+      const was = oldPlan[cell] === newPlan[cell] ? "" : ` (it was ${oldPlan[cell]})`;
+      const choice = clearWinner(cell)
+        ? `Best: ${newPlan[cell]}${was}.`
+        : `Several actions tie, so Harty picked ${newPlan[cell]}${was}.`;
+      return { cell, text: `${squareName(cell)}: ${values}. ${choice}` };
+    }
+
+    // ---------- The walking panel: the reinforcement learning loop, live ----------
+
+    // Fill in the loop for the move Harty just made.
     function showStep(step, total) {
       rlLoop.classList.remove("is-idle");
       rlState.textContent = squareName(step.from);
@@ -4336,7 +4767,7 @@
       rlReturn.textContent = formatReward(total);
     }
 
-    // Empty the loop, ready for a new episode. "idle" fades it while Harty is planning, not walking.
+    // Empty the loop, ready for a new episode.
     function clearLoop(idle) {
       for (const slot of [rlState, rlAction, rlReward, rlNext]) slot.textContent = "–";
       rlReward.classList.remove("is-good", "is-bad");
@@ -4351,67 +4782,25 @@
       movesBar.classList.toggle("is-late", movesUsed >= MAX_MOVES_PER_ATTEMPT * 0.8);
     }
 
-    // Plans that keep the same route share one row, like "Plans 2–5: same route as plan 1".
-    function logSameRoute(planNumber, samePlanAs) {
-      const last = attemptLog.lastElementChild;
-      if (last !== null && last.dataset.sameAs === String(samePlanAs)) {
-        last.querySelector(".log-name").textContent = `Policies ${last.dataset.firstPlan}–${planNumber}`;
-        return;
-      }
-      logAttempt(`Policy ${planNumber}`, null, samePlanAs);
-      attemptLog.lastElementChild.dataset.sameAs = String(samePlanAs);
-      attemptLog.lastElementChild.dataset.firstPlan = String(planNumber);
-    }
-
-    // Add a row to the list of attempts. "attempt" is null for a plan that kept the same route.
-    function logAttempt(name, attempt, samePlanAs = null, isBest = false) {
-      let icon = "log-same";
-      let result = `Same route as policy ${samePlanAs}`;
-      if (attempt !== null && attempt.outcome === "treasure") {
-        const moves = attempt.moves.length;
-        icon = "fx-star";
-        result = `Return +1 in ${moves} move${moves === 1 ? "" : "s"}`;
-      } else if (attempt !== null && attempt.outcome === "hole") {
-        icon = "log-hole";
-        result = "Return −1, fell in a hole";
-      } else if (attempt !== null) {
-        icon = "log-clock";
-        result = "Return 0, out of moves";
-      }
-      const row = document.createElement("li");
-      row.className = isBest ? "is-best" : "";
-      row.innerHTML = `<svg class="log-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#${icon}"></use></svg><span class="log-name"></span><span class="log-result"></span>`;
-      row.querySelector(".log-name").textContent = name;
-      row.querySelector(".log-result").textContent = result;
-      attemptLog.append(row);
-      attemptLog.scrollTop = attemptLog.scrollHeight;
-    }
-
-    // The round button next to the title says Run, Stop or Again.
+    // The round button next to the title says Run, or Stop while the lesson is on.
     function updateRunButton() {
-      const state = run === null ? "run" : run.finished ? "again" : "stop";
+      const state = run === null ? "run" : "stop";
       const blocked = run === null && whyRunIsBlocked() !== null;
-      runLabel.textContent = { run: "Run", stop: "Stop", again: "Again" }[state];
+      runLabel.textContent = state === "run" ? "Run" : "Stop";
       runIcon.setAttribute("href", `#icon-${state}`);
       runButton.classList.toggle("is-stop", state === "stop");
       runButton.classList.toggle("is-ready", state === "run" && !blocked);
       // aria-disabled (not "disabled") so a tap can still explain what is missing.
       runButton.setAttribute("aria-disabled", String(blocked));
-      backButton.hidden = run === null || !run.finished;
     }
 
     runButton.addEventListener("click", () => {
-      if (run === null || run.finished) {
+      if (run === null) {
         startRun();
       } else {
         leaveRun();
         note("Stopped. Back to building.");
       }
-    });
-
-    backButton.addEventListener("click", () => {
-      leaveRun();
-      note("Back to building.");
     });
 
     for (const button of speedButtons) {
@@ -4440,8 +4829,6 @@
 
     // Some sentences depend on the rules at the top of this script, so they are written in here.
     function fillHowTo() {
-      howTo.querySelector('[data-fill="tries"]').textContent = RANDOM_ATTEMPTS;
-      howTo.querySelector('[data-fill="moves"]').textContent = MAX_MOVES_PER_ATTEMPT;
       howTo.querySelector('[data-fill="discount"]').textContent = DISCOUNT;
       howTo.querySelector('[data-fill="reward"]').textContent =
         `${formatReward(REWARD_TREASURE)} at the treasure, ${formatReward(REWARD_HOLE)} in a hole, ${formatReward(REWARD_STEP)} for any other move.`;
@@ -4463,7 +4850,7 @@
       howToNext.textContent = howToPage === howToPages.length - 1 ? "Let's build!" : "Next";
     }
 
-    // ASSUMPTION: opening the guide during a run doesn't pause it; the run carries on behind.
+    // ASSUMPTION: opening the guide during the lesson doesn't pause it; Harty carries on behind.
     function openHowTo() {
       fillHowTo();
       showHowToPage(0);
@@ -4507,6 +4894,8 @@
     // =====================================================================
 
     setGridSize(GRID_SIZE);
+    document.querySelector("#legend-low").textContent = formatReward(-VALUE_SCALE);
+    document.querySelector("#legend-high").textContent = formatReward(VALUE_SCALE);
     document.body.classList.toggle("no-switch", !LET_STUDENTS_SWITCH_BUILDER);
     document.body.classList.toggle("no-idle", !IDLE_ANIMATIONS);
     if (START_WITH_EXAMPLE) loadExample(true);
