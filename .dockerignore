@@ -1,0 +1,9 @@
+.git
+.claude
+.vscode
+__pycache__
+*.ipynb
+*.code-workspace
+src
+images
+README.md

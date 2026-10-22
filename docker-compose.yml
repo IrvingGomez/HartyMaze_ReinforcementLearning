@@ -1,0 +1,8 @@
+services:
+  harty-maze:
+    build: .
+    image: harty-maze:latest
+    container_name: harty-maze
+    ports:
+      - "8080:8080"      # change the left number to publish on another port
+    restart: unless-stopped
