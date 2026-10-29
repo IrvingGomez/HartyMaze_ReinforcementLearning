@@ -1,9 +1,11 @@
 <!doctype html>
 <!--
   HARTY'S MAZE
-  A maze builder for teaching reinforcement learning. Students build a maze, then watch
-  Harty learn his way through it with policy iteration, the same method as
-  src/policy_iteration.py and the HartyMazeSolver notebook.
+  A maze builder for teaching reinforcement learning. Students build a maze, then Harty
+  learns his way through it in a lesson of short chapters: policy evaluation, policy
+  improvement and policy iteration (the same method as src/policy_iteration.py and the
+  HartyMazeSolver notebook), then value iteration as the faster way.
+  Made by Khant Phyo Wai. Advisor: Irving Gomez. (See CREDITS.)
 
   One file, no installs and no internet needed: open it by double-clicking.
   Everything you might want to change is at the top of the <script> section, in the blocks
@@ -153,6 +155,7 @@
     }
 
     .brand p { margin: 4px 0 0; color: var(--chalk-dim); font-size: 0.92rem; }
+    .brand-links { white-space: nowrap; }
 
     /* ===== Harty and the speech bubble ===== */
     .coach {
@@ -431,6 +434,7 @@
     .fx-cloud { fill: #fff; stroke: var(--ink); stroke-width: 2.5; }
     .fx-chunk { fill: var(--ink); }
     .fx-glow { fill: var(--sun); stroke: var(--harty); stroke-width: 3; }
+    .fx-changed { fill: none; stroke: var(--sun); stroke-width: 5; }
 
     /* ===== Tools on the right ===== */
     .tools { grid-area: tools; }
@@ -879,6 +883,11 @@
       cursor: pointer;
     }
     .how-to-close svg { width: 18px; height: 18px; }
+    .credits-art { max-height: 110px; }
+    .how-to-page .credits-role { margin: 14px 0 0; color: var(--chalk-dim); font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+    .how-to-page .credits-name { margin: 0 0 8px; color: var(--sun); font: 800 1.6rem/1.2 var(--font-display); }
+    .credits-work { font-size: 0.95rem; }
+    .credits-nav { justify-content: flex-end; }
     .how-to-next:focus-visible,
     .how-to-dot:focus-visible,
     .how-to-close:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
@@ -923,10 +932,14 @@
     .lesson-step.is-done span { border: 2.5px solid var(--ink); background: var(--go); color: #fff; }
     .lesson-step:focus-visible { outline: 3px solid var(--sun); outline-offset: -2px; border-radius: 50%; }
 
+    .lesson-step svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
+
     .lesson-count { margin: 0; color: var(--chalk-dim); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
     .tools .lesson-title { display: block; margin: 2px 0 8px; font-size: 1.55rem; line-height: 1.15; animation: none; }
     .lesson-text { margin: 0 0 12px; font-size: 1rem; line-height: 1.45; }
     .lesson-text b { color: var(--sun); }
+    .lesson-list { display: grid; gap: 6px; margin: 0 0 10px; padding-left: 20px; }
+    .lesson-list li::marker { color: var(--sun); }
     .lesson-example {
       margin: 0 0 12px;
       padding: 10px 12px;
@@ -935,7 +948,99 @@
       font-size: 0.92rem;
       line-height: 1.4;
       font-variant-numeric: tabular-nums;
+      white-space: pre-line;       /* worked examples can have a second line */
     }
+
+    /* What to do on this slide: a yellow box under the title. */
+    .lesson-todo {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin: 0 0 10px;
+      padding: 8px 12px;
+      border: 2.5px solid var(--sun);
+      border-radius: 12px;
+      background: rgba(255, 201, 60, 0.12);
+      font-size: 0.95rem;
+      line-height: 1.35;
+    }
+    .lesson-todo[hidden] { display: none; }
+    .lesson-todo b { color: var(--sun); }
+    .lesson-todo-label {
+      flex: none;
+      padding: 1px 8px;
+      border-radius: 999px;
+      background: var(--sun);
+      color: var(--ink);
+      font: 800 0.7rem var(--font-display);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    /* The list of chapters. */
+    .chapter-list { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+    .chapter-link {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      min-height: 48px;
+      padding: 6px 12px 6px 7px;
+      border: 2.5px solid rgba(159, 179, 191, 0.45);
+      border-radius: 14px;
+      background: none;
+      color: var(--chalk);
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .chapter-link:hover { border-color: var(--sun); }
+    .chapter-link:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
+    .chapter-num {
+      flex: none;
+      display: grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      border: 2.5px solid var(--ink);
+      border-radius: 50%;
+      background: var(--sun);
+      color: var(--ink);
+      font: 800 0.85rem var(--font-display);
+    }
+    .chapter-link strong { display: block; font: 800 1rem/1.2 var(--font-display); }
+    .chapter-link small { display: block; color: var(--chalk-dim); font-size: 0.82rem; line-height: 1.3; }
+
+    /* Chapter 4: evaluate → improve ↻, with the step Harty is doing lit up. */
+    .loop-panel { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; }
+    .loop-panel[hidden] { display: none; }
+    .loop-step {
+      padding: 3px 12px;
+      border: 2.5px dashed var(--chalk-dim);
+      border-radius: 999px;
+      color: var(--chalk-dim);
+      font: 800 0.85rem var(--font-display);
+      transition: background-color 250ms, color 250ms, border-color 250ms;
+    }
+    .loop-step.is-now { border: 2.5px solid var(--ink); background: var(--sun); color: var(--ink); }
+    .loop-arrow { color: var(--chalk-dim); font-weight: 800; }
+
+    /* While values are worked out: the sweep counter. */
+    .sweep-panel {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 0 0 8px;
+      padding: 6px 12px;
+      border-radius: 10px;
+      background: rgba(13, 22, 29, 0.35);
+      font-variant-numeric: tabular-nums;
+    }
+    .sweep-panel[hidden] { display: none; }
+    #sweep-name { font: 800 1.05rem var(--font-display); }
+    #sweep-change { color: var(--chalk-dim); font-size: 0.82rem; text-align: right; }
     .lesson-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
     .lesson-tools-label { color: var(--chalk-dim); font-size: 0.86rem; font-weight: 700; }
     .lesson-tools[hidden] { display: none; }
@@ -951,6 +1056,7 @@
       touch-action: manipulation;
     }
     .lesson-tool[aria-pressed="true"] { border-color: var(--ink); background: var(--sun); color: var(--ink); }
+    .lesson-tool[aria-disabled="true"] { opacity: 0.45; }
     .lesson-tool:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
 
     /* The value colors, from the worst (red) through 0 to the best (purple), like the notebook. */
@@ -977,6 +1083,11 @@
     }
     .lesson-next:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--slate-deep); }
     .lesson-next:focus-visible { outline: 3px solid var(--sun); outline-offset: 3px; }
+    /* On a short screen the lesson panel can be taller than the window: Next and Back stay in view.
+       (Tablets held upright and phones have their own bar at the bottom, further down.) */
+    @media (min-width: 901px) {
+      .is-running .lesson-nav { position: sticky; bottom: 0; z-index: 4; padding-bottom: 10px; background-color: var(--slate); background-image: var(--chalk-dust); }
+    }
 
     /* What the maze shows during the lesson: value colors, values and policy arrows. */
     .lesson-tint { fill: transparent; transition: fill 400ms ease; }
@@ -1171,6 +1282,10 @@
       .tools .lesson-title { margin-bottom: 6px; font-size: 1.3rem; }
       .lesson-text { margin-bottom: 8px; font-size: 0.92rem; line-height: 1.38; }
       .lesson-example { margin-bottom: 8px; padding: 8px 10px; font-size: 0.86rem; }
+      .lesson-todo { margin-bottom: 8px; padding: 6px 10px; font-size: 0.88rem; }
+      .lesson-tools { gap: 6px; }
+      .lesson-tool { min-height: 40px; padding: 0 11px; font-size: 0.82rem; }
+      .chapter-link { min-height: 44px; padding-block: 4px; }
       .lesson-tools { margin-bottom: 8px; }
       .rl-loop { margin-top: 6px; }
       .run-controls { margin-top: 8px; }
@@ -1284,7 +1399,7 @@
       <div class="brand-text">
         <h1>Harty's Maze</h1>
         <svg class="swoosh" viewBox="0 0 200 14" aria-hidden="true"><path d="M3 10 C 48 2, 120 1, 197 7" filter="url(#chalk)"/></svg>
-        <p>Build a maze. Harty learns it. <button id="how-to-open" class="link-btn" type="button">How to play</button></p>
+        <p>Build a maze. Harty learns it. <span class="brand-links"><button id="how-to-open" class="link-btn" type="button">How to play</button> · <button id="credits-open" class="link-btn" type="button">Credits</button></span></p>
       </div>
       <!-- Run, Stop or Again, depending on what is happening. -->
       <button id="run" class="run-btn" type="button">
@@ -1437,10 +1552,19 @@
 
       <!-- The lesson, shown instead of the shelves after Run is pressed (see THE LESSON in the script). -->
       <section class="run-panel" aria-label="Lesson">
-        <ol id="lesson-steps" class="lesson-steps" aria-label="Steps of the lesson"></ol>
+        <ol id="lesson-steps" class="lesson-steps" aria-label="Chapters of the lesson"></ol>
         <p id="lesson-count" class="lesson-count"></p>
         <h2 id="lesson-title" class="lesson-title"></h2>
-        <p id="lesson-text" class="lesson-text" aria-live="polite"></p>
+        <!-- What the class should do on this slide. -->
+        <p id="lesson-todo" class="lesson-todo" aria-live="polite" hidden><span class="lesson-todo-label">To do</span><span id="lesson-todo-text"></span></p>
+        <div id="lesson-text" class="lesson-text" aria-live="polite"></div>
+        <!-- Chapter 4: the loop of policy iteration, with the step Harty is doing lit up. -->
+        <div id="loop-panel" class="loop-panel" aria-hidden="true" hidden>
+          <span class="loop-step" data-phase="evaluate">Evaluate</span><span class="loop-arrow">→</span>
+          <span class="loop-step" data-phase="improve">Improve</span><span class="loop-arrow">↻</span>
+        </div>
+        <!-- While values are worked out: which sweep is on the maze, and how much it changed them. -->
+        <div id="sweep-panel" class="sweep-panel" hidden><strong id="sweep-name"></strong><span id="sweep-change"></span></div>
         <p id="lesson-example" class="lesson-example" aria-live="polite" hidden></p>
         <!-- While Harty walks: the reinforcement learning loop, live. Where he is, what he does,
              what he gets, and where he ends up. -->
@@ -1534,25 +1658,24 @@
           <circle cx="44" cy="44" r="36" fill="#f2661c" stroke="#1d1a3b" stroke-width="4"/>
           <use href="#icon-run" x="27" y="27" width="36" height="36" style="color: #fff"></use>
           <path d="M92 44 H 116 M108 36 L 117 44 L 108 52" filter="url(#chalk)" fill="none" stroke="#f2f0e6" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M150 44 H 396" fill="none" stroke="#9fb3bf" stroke-width="3" stroke-dasharray="5 6"/>
+          <path d="M150 44 H 392" fill="none" stroke="#9fb3bf" stroke-width="3" stroke-dasharray="5 6"/>
           <g class="how-to-step-marks">
-            <circle cx="152" cy="44" r="16"/><circle cx="193" cy="44" r="16"/><circle cx="234" cy="44" r="16"/><circle cx="275" cy="44" r="16"/>
-            <circle cx="316" cy="44" r="16"/><circle cx="357" cy="44" r="16"/><circle cx="398" cy="44" r="16"/>
-            <text x="152" y="50">1</text><text x="193" y="50">2</text><text x="234" y="50">3</text><text x="275" y="50">4</text>
-            <text x="316" y="50">5</text><text x="357" y="50">6</text><text x="398" y="50">7</text>
+            <circle cx="152" cy="44" r="16"/><circle cx="200" cy="44" r="16"/><circle cx="248" cy="44" r="16"/>
+            <circle cx="296" cy="44" r="16"/><circle cx="344" cy="44" r="16"/><circle cx="392" cy="44" r="16"/>
+            <text x="152" y="50">1</text><text x="200" y="50">2</text><text x="248" y="50">3</text>
+            <text x="296" y="50">4</text><text x="344" y="50">5</text><text x="392" y="50">6</text>
           </g>
         </svg>
-        <h2>Press Run for a lesson</h2>
+        <h2>Press Run for the lesson</h2>
         <ol class="how-to-steps is-short">
-          <li><strong>The maze:</strong> states, actions, rewards and returns. Then play Harty yourself.</li>
-          <li><strong>Moving at random:</strong> the numbers first, then see why. Roll the dice.</li>
-          <li><strong>Improve the policy:</strong> which way would you go? Policy 1.</li>
-          <li><strong>Score the policy:</strong> new plan, new numbers.</li>
-          <li><strong>Repeat</strong> until the policy stops changing.</li>
-          <li><strong>The best policy,</strong> from any square. Match it, then try to beat it.</li>
-          <li><strong>The discount:</strong> patient or short-sighted?</li>
+          <li><strong>The game:</strong> states, actions, rewards and returns. Then play Harty yourself.</li>
+          <li><strong>Policy evaluation:</strong> every value starts at 0. Step through the sweeps.</li>
+          <li><strong>Policy improvement:</strong> which way would you go? Policy 1.</li>
+          <li><strong>Policy iteration:</strong> evaluate, improve, repeat, until the policy is the best.</li>
+          <li><strong>Value iteration:</strong> the same best policy in far fewer sweeps.</li>
+          <li><strong>Extra, the discount:</strong> patient or short-sighted?</li>
         </ol>
-        <p class="how-to-tip">Harty waits for you: press Next (<span data-fill="next-keys">or Enter, N or Page Down</span>) when the class is ready. The numbered circles jump to any step, and Stop returns to building. <span data-fill="move-keys">The arrow keys, W A S D and the arrow pad move Harty on every slide.</span></p>
+        <p class="how-to-tip">Each chapter is short: do them in order, or pick one. Every slide's <strong>To do</strong> says what to do, and Harty waits for you: press Next (<span data-fill="next-keys">or Enter, N or Page Down</span>) when the class is ready. The numbered circles jump to any chapter, and Stop returns to building. <span data-fill="move-keys">The arrow keys, W A S D and the arrow pad move Harty on every slide.</span></p>
       </section>
 
       <section class="how-to-page" hidden>
@@ -1568,6 +1691,8 @@
           <div><dt>Policy</dt><dd>How Harty chooses an action in every state: at random, or with an arrow on every square.</dd></div>
           <div><dt>Value</dt><dd>The return Harty can expect from a state, on average, if he follows his policy.</dd></div>
           <div><dt>Discount</dt><dd>A reward one move further away counts <span data-fill="discount">0.9</span> times as much.</dd></div>
+          <div><dt>Sweep</dt><dd>One update of every value in the maze, using the values from before.</dd></div>
+          <div><dt>Optimal</dt><dd>The best: no other policy has a higher value on any square.</dd></div>
         </dl>
       </section>
 
@@ -1579,19 +1704,51 @@
     </div>
   </dialog>
 
+  <!-- CREDITS: who made Harty's Maze. Opens from "Credits" under the title, and from the lesson. -->
+  <dialog id="credits" class="how-to credits" aria-labelledby="credits-title">
+    <div class="how-to-board">
+      <button id="credits-close" class="how-to-close" type="button" aria-label="Close the credits">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+      </button>
+      <section class="how-to-page">
+        <svg class="how-to-art credits-art" viewBox="0 0 420 110" aria-hidden="true">
+          <use href="#piece-harty" x="96" y="0" width="110" height="110"></use>
+          <use href="#piece-treasure" x="214" y="4" width="104" height="104"></use>
+          <use href="#treasure-sparkle" x="214" y="4" width="104" height="104"></use>
+        </svg>
+        <h2 id="credits-title">Credits</h2>
+        <p class="credits-role">Made by</p>
+        <p class="credits-name">Khant Phyo Wai</p>
+        <ul class="how-to-list credits-work">
+          <li>Designed and programmed Harty's Maze, a web app that teaches reinforcement learning.</li>
+          <li>The maze builder: pieces to drag and drop, walls to draw or drop in as shapes, portals, maze sizes, example mazes, and walking Harty around.</li>
+          <li>The learning engine in JavaScript, checked against the project's Python code.</li>
+          <li>The lesson in chapters: policy evaluation, policy improvement, policy iteration and value iteration, with live values, sweeps, quizzes and "your turn" games.</li>
+          <li>Harty's animations, the how-to guide, and the layouts for computers, tablets and phones.</li>
+          <li>The Docker setup for hosting it on a server.</li>
+        </ul>
+        <p class="credits-role">Advisor</p>
+        <p class="credits-name">Irving Gomez</p>
+      </section>
+      <nav class="how-to-nav credits-nav" aria-label="Credits">
+        <button id="credits-done" class="how-to-next" type="button">Close</button>
+      </nav>
+    </div>
+  </dialog>
+
   <script>
     // WHAT'S IN THIS SCRIPT, IN ORDER
     //   Rules you can change: grid size, the how-to guide, portals, animations, rewards,
-    //     discount, move limit, the lesson's discounts and pace, wall builders, example mazes
+    //     discount, move limit, sweeps, the lesson's discounts and pace, wall builders, example mazes
     //   Drawing sizes, the maze data (walls and pieces), and what the student is doing
     //   Small helpers, then changing the maze: placing, moving, removing, Undo, size, examples
     //   Building walls with dots, and with wall shapes
     //   Taps and drags, and drawing the board (redrawn from the maze data after every change)
     //   Little effects, the shelf, and Harty's speech bubble
     //   Listening to fingers, mice and keyboards
-    //   The learning engine (policy iteration, matching src/policy_iteration.py)
-    //   The lesson: what the Run button starts, step by step, like the HartyMazeSolver notebook
-    //   How to play: the guide for students
+    //   The learning engine (policy iteration, matching src/policy_iteration.py, and value iteration)
+    //   The lesson: what the Run button starts, in chapters, like the HartyMazeSolver notebook
+    //   How to play: the guide for students, and the credits
     //   Start: what happens when the page opens
 
     // =====================================================================
@@ -1648,9 +1805,11 @@
     const MAX_LEARNING_ROUNDS = 100;    // safety limit, like max_cycles in the notebook
     const EVALUATION_SWEEPS = 200;      // like n_eval_sweeps in the notebook
     const EVALUATION_TOLERANCE = 1e-3;  // like tol in the notebook: scores that change less than this have settled
-    const RANDOM_SEED = null;           // null = different random moves every Run; a number like 0 = the same every time
+    const RANDOM_WALK_SWEEPS = 200;     // moving at random is evaluated like uniform_random_policy_value in the notebook:
+    const RANDOM_WALK_TOLERANCE = 1e-6; // at most 200 sweeps, until no value changes by this much
+    const RANDOM_SEED = null;          // null = different random moves every Run; a number like 0 = the same every time
 
-    // The discounts the class can try in the last step of the lesson.
+    // The discounts the class can try in the last chapter of the lesson.
     // ASSUMPTION: 0.5 and 0.99 as well as 0.9, the values the notebook's "What to try next" suggests.
     const LESSON_DISCOUNTS = [0.5, 0.9, 0.99];
 
@@ -1667,7 +1826,7 @@
     const MOVE_TIME_MS = 340;               // one move while Harty follows a policy
     const RANDOM_MOVE_TIME_MS = 260;        // one move while he wanders at random...
     const RANDOM_MOVES_AT_FULL_TIME = 12;   // ...after this many, the rest of that wander plays 3× faster
-    const SWEEP_TIME_MS = 450;              // one sweep of policy evaluation (the values spreading out)...
+    const SWEEP_TIME_MS = 450;              // one sweep, when the sweeps play by themselves (the values spreading out)...
     const SWEEPS_TIME_LIMIT_MS = 5000;      // ...but all the sweeps of one evaluation take at most this long
 
     // ASSUMPTION: a move that bumps into a wall still counts as one of the moves (Harty stays
@@ -1929,6 +2088,13 @@
     const rlNext = document.querySelector("#rl-next");
     const rlReturn = document.querySelector("#rl-return");
     const rlReturnLine = document.querySelector(".rl-return");
+    const lessonTodo = document.querySelector("#lesson-todo");
+    const lessonTodoText = document.querySelector("#lesson-todo-text");
+    const loopPanel = document.querySelector("#loop-panel");
+    const sweepPanel = document.querySelector("#sweep-panel");
+    const sweepName = document.querySelector("#sweep-name");
+    const sweepChange = document.querySelector("#sweep-change");
+    const credits = document.querySelector("#credits");
 
     // =====================================================================
     // SMALL HELPERS
@@ -3541,6 +3707,7 @@
     });
 
     document.addEventListener("keydown", (event) => {
+      if (credits.open) return;           // Escape closes the credits by itself
       if (howTo.open) {
         if (event.key === "ArrowRight") showHowToPage(howToPage + 1);
         if (event.key === "ArrowLeft") showHowToPage(howToPage - 1);
@@ -3887,7 +4054,7 @@
     // If "sweeps" is a list, the values after every sweep are added to it.
     function randomWalkValues(maze, discount = DISCOUNT, sweeps = null) {
       let values = Object.fromEntries(maze.cells.map((cell) => [cell, 0]));
-      for (let sweep = 0; sweep < 200; sweep += 1) {
+      for (let sweep = 0; sweep < RANDOM_WALK_SWEEPS; sweep += 1) {
         const newValues = {};
         let biggestChange = 0;
         for (const cell of maze.cells) {
@@ -3901,7 +4068,31 @@
         }
         values = newValues;
         if (sweeps !== null) sweeps.push(values);
-        if (biggestChange < 1e-6) break;
+        if (biggestChange < RANDOM_WALK_TOLERANCE) break;
+      }
+      return values;
+    }
+
+    // VALUE ITERATION (the Bellman optimality equation), for the last chapter of the lesson.
+    // It is not in src/: the lesson shows it as the faster way to the same best policy.
+    // Policy iteration evaluates a whole policy before it improves a single arrow. Value iteration
+    // improves in every sweep: a square's new value is the best of its four scores, worked out
+    // from the values after the sweep before. Like policy evaluation it starts with every value
+    // at 0 and stops when no value changes by EVALUATION_TOLERANCE or more.
+    // If "sweeps" is a list, the values after every sweep are added to it.
+    function valueIteration(maze, discount = DISCOUNT, sweeps = null) {
+      let values = Object.fromEntries(maze.cells.map((cell) => [cell, 0]));
+      for (let sweep = 0; sweep < EVALUATION_SWEEPS; sweep += 1) {
+        const scores = scoresFromValues(maze, values, discount);
+        const newValues = {};
+        let biggestChange = 0;
+        for (const cell of maze.cells) {
+          newValues[cell] = isEnd(maze, cell) ? 0 : Math.max(...ACTIONS.map((action) => scores[cell][action]));
+          biggestChange = Math.max(biggestChange, Math.abs(newValues[cell] - values[cell]));
+        }
+        values = newValues;
+        if (sweeps !== null) sweeps.push(values);
+        if (biggestChange < EVALUATION_TOLERANCE) break;
       }
       return values;
     }
@@ -3936,32 +4127,32 @@
 
     // =====================================================================
     // THE LESSON: what the Run button starts
-    // Harty teaches reinforcement learning on the student's own maze, one step at a time, with the
+    // Harty teaches reinforcement learning on the student's own maze, in short chapters, with the
     // ideas of the HartyMazeSolver notebook, in the order someone who has never heard of
-    // reinforcement learning needs them. He waits for Next before every step.
-    // Part 1: The game
-    //   1. The maze: states, actions, rewards, returns and the discount, then the class plays
-    //      Harty, and the recipe: start with a policy, score it, improve it, repeat
-    // Part 2: How Harty learns (policy iteration: score, improve, score, improve, ...)
-    //   2. Moving at random (the notebook's "before learning"): the numbers first, then the
-    //      movement that explains them. Moving at random is policy 0, and these are its values.
-    //   3. Improve the policy: which way would you go? Every square takes its best action: policy 1
-    //   4. Score the policy: new plan, new numbers (policy evaluation)
-    //   5. Repeat until improving changes nothing: the policy is optimal
-    // Part 3: What Harty learned
-    //   6. The best policy: follow it, match it, start it anywhere, try to beat it
-    //   7. The discount: try other discounts and see what changes
+    // reinforcement learning needs them. The class can do the chapters in order or pick one.
+    // Harty waits for Next before every slide, and every slide says what to do on it ("To do").
+    //   The list of chapters, with a button for each one, then:
+    //   1. The game: states, actions, rewards, returns and the discount, then the class plays Harty
+    //   2. Policy evaluation: how good is moving at random (policy 0)? Every value starts at 0, and
+    //      the class steps through the sweeps one at a time, until the values stop changing
+    //   3. Policy improvement: which way would you go? Every square takes its best action: policy 1
+    //   4. Policy iteration: evaluate, improve, evaluate, improve... until the policy is optimal,
+    //      counting every evaluation's sweeps. Then follow the best policy, and try to beat it
+    //   5. Value iteration: the Bellman optimality equation finds the same best policy in far
+    //      fewer sweeps, because it improves in every sweep instead of evaluating whole policies
+    //   6. Extra, the discount: try other discounts and see what changes
     // The class can move Harty on every slide (see moveInLesson), and "Your turn" slides ask them to.
-    // Each step has one or more "slides". A slide says what Harty says, what the panel explains,
-    // what the maze shows (values and arrows) and what moves (Harty walking, values spreading).
+    // A slide says what Harty says, what to do, what the panel explains, what the maze shows
+    // (values and arrows) and what moves (Harty walking, values changing sweep by sweep).
     // =====================================================================
 
-    const LESSON_STEPS = ["The maze", "Moving at random", "Improve the policy", "Score the policy", "Repeat", "The best policy", "The discount"];
-    // Which part of the lesson each step belongs to (shown above the step's title).
-    const LESSON_PARTS = [
-      "Part 1: The game",
-      "Part 2: How Harty learns", "Part 2: How Harty learns", "Part 2: How Harty learns", "Part 2: How Harty learns",
-      "Part 3: What Harty learned", "Part 3: What Harty learned"
+    const LESSON_CHAPTERS = [
+      { name: "The game", about: "States, actions, rewards and returns. Then play Harty yourself." },
+      { name: "Policy evaluation", about: "How good is a policy? Start every value at 0, then sweep." },
+      { name: "Policy improvement", about: "Use the values to choose a better move in every square." },
+      { name: "Policy iteration", about: "Evaluate, improve, repeat, until the policy is the best." },
+      { name: "Value iteration", about: "A faster way: take the best move in every sweep." },
+      { name: "Extra: the discount", about: "Patient or short-sighted? Try other discounts." }
     ];
 
     let run = null;          // the lesson on screen, or null while building
@@ -4031,11 +4222,21 @@
       // random walk never changes the policies the lesson shows.
       const seed = (offset) => (RANDOM_SEED === null ? null : RANDOM_SEED + offset);
       const learning = learn(maze, makeRandom(seed(0)));
+      // Value iteration, for chapter 5. Where moves tie, its arrows keep policy iteration's choice,
+      // so the two best policies can be compared arrow by arrow.
+      const shortcutSweeps = [];
+      const shortcutValues = valueIteration(maze, DISCOUNT, shortcutSweeps);
+      const bestPlan = learning.rounds[learning.rounds.length - 1].plan;
+      const shortcut = {
+        sweeps: shortcutSweeps,
+        plan: improvePlan(maze, scoresFromValues(maze, shortcutValues), bestPlan, makeRandom(seed(2)))
+      };
       run = {
         maze,
         learning,
+        shortcut,
         walkRandom: makeRandom(seed(1)),
-        discountLearning: new Map([[DISCOUNT, learning]]),   // step 7 learns again for each discount tried
+        discountLearning: new Map([[DISCOUNT, learning]]),   // chapter 6 learns again for each discount tried
         seed,
         walks: 0,               // how many random walks the class has watched
         runner: null,
@@ -4047,11 +4248,13 @@
         view: blankView(),
         at: maze.start,         // the square Harty is on (or moving to)
         demo: null,             // the play of a demo that has the maze to itself (see asDemo), or null
-        autoRounds: false,      // "Play all rounds" is moving through step 5 by itself
+        autoRounds: false,      // "Play all policies" is moving through chapter 4 by itself
         quiz: new Set(),        // the actions the class has tried on a "which way?" slide
         mine: null,             // the episode the class is playing: { from, moves, total }, or null
         handBusy: null,         // the play of the class's move that is still moving, or null
-        handQueue: []           // the class's presses waiting for that move to finish
+        handQueue: [],          // the class's presses waiting for that move to finish
+        sweep: null,            // the sweeps on screen (see startSweeps), or null
+        sweepMemory: new Map()  // the sweep the class last saw in each evaluation, so a slide can carry on from it
       };
       run.slides = buildSlides(run);
       note("");
@@ -4085,19 +4288,23 @@
     // ---------- Moving through the lesson ----------
 
     // Show one slide: stop whatever the last one was doing, then set this one up.
-    // "auto" is true when "Play all rounds" moves on by itself; anything else stops it.
+    // "auto" is true when "Play all policies" moves on by itself; anything else stops it.
     function goToSlide(index, auto = false) {
       if (!auto) run.autoRounds = false;
       const slide = run.slides[index];
       run.slide = index;
       const play = startPlay();
       run.view = blankView();
+      run.sweep = null;
+      sweepPanel.hidden = true;
       hartySays(slide.say);
-      note(slide.note ?? "");
+      note(slideNote(slide));
       showLessonText(slide);
       showTools(slide);
+      showLoop(slide.loop ?? null);
       rlReturnLine.hidden = slide.noReturn === true;
       slide.show?.(play);
+      if (slide.sweeps) startSweeps(slide.sweeps);
       drawLessonView();
       // While Harty isn't walking, his thought cloud shows how he picks his action on his square:
       // "?" while he moves at random, or his policy's arrow.
@@ -4106,6 +4313,17 @@
       updateLessonNav();
       letClassTapMaze();
       if (slide.play) slide.play(play).catch(stopQuietly);
+    }
+
+    function goToChapter(chapter) {
+      goToSlide(run.slides.findIndex((slide) => slide.chapter === chapter));
+    }
+
+    // The small line in Harty's bubble for a slide. On one column (tablets held upright, phones)
+    // the lesson panel can be below the screen, so the bubble repeats what to do.
+    function slideNote(slide) {
+      if (slide.note !== undefined) return slide.note;
+      return narrowScreen.matches && slide.todo ? slide.todo.replace(/<[^>]+>/g, "") : "";
     }
 
     // A fresh play for the slide on screen: the last one stops, Harty goes back to his start
@@ -4158,36 +4376,49 @@
       else stepToward(cell);
     }
 
-    // The numbered steps along the top of the lesson panel. Each one jumps to its first slide.
-    const lessonStepButtons = LESSON_STEPS.map((name, index) => {
+    // The circles along the top of the lesson panel: the list of chapters, then one circle for
+    // each chapter. Each one jumps to the start of its chapter.
+    const chapterButtons = ["List of chapters", ...LESSON_CHAPTERS.map((chapter, index) => `Chapter ${index + 1}: ${chapter.name}`)].map((name, chapter) => {
       const item = document.createElement("li");
       const button = document.createElement("button");
       button.type = "button";
       button.className = "lesson-step";
       button.title = name;
       const mark = document.createElement("span");
-      mark.textContent = index + 1;
+      if (chapter === 0) mark.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 4.5h9M3.5 8h9M3.5 11.5h9"/></svg>';
+      else mark.textContent = chapter;
       button.append(mark);
-      button.setAttribute("aria-label", `Step ${index + 1}: ${name}`);
+      button.setAttribute("aria-label", name);
       button.addEventListener("click", () => {
-        if (run !== null) goToSlide(run.slides.findIndex((slide) => slide.step === index + 1));
+        if (run !== null) goToChapter(chapter);
       });
       item.append(button);
       lessonSteps.append(item);
       return button;
     });
 
+    // The chapter buttons on the list of chapters.
+    lessonText.addEventListener("click", (event) => {
+      const link = event.target.closest(".chapter-link");
+      if (link !== null && run !== null) goToChapter(Number(link.dataset.chapter));
+    });
+
     function showLessonText(slide) {
-      lessonStepButtons.forEach((button, index) => {
-        const step = index + 1;
-        button.classList.toggle("is-now", step === slide.step);
-        button.classList.toggle("is-done", step < slide.step);
-        button.firstElementChild.textContent = step < slide.step ? "✓" : String(step);
-        button.setAttribute("aria-current", step === slide.step ? "step" : "false");
+      chapterButtons.forEach((button, chapter) => {
+        const done = chapter > 0 && chapter < slide.chapter;
+        button.classList.toggle("is-now", chapter === slide.chapter);
+        button.classList.toggle("is-done", done);
+        if (chapter > 0) button.firstElementChild.textContent = done ? "✓" : String(chapter);
+        button.setAttribute("aria-current", chapter === slide.chapter ? "step" : "false");
       });
-      lessonCount.textContent = `${LESSON_PARTS[slide.step - 1]} · Step ${slide.step} of ${LESSON_STEPS.length}`;
-      lessonTitle.textContent = slide.title ?? LESSON_STEPS[slide.step - 1];
-      lessonText.innerHTML = slide.text;   // written in this file, with <b> around the new words
+      const inChapter = run.slides.filter((other) => other.chapter === slide.chapter);
+      lessonCount.textContent = slide.chapter === 0
+        ? "Harty's lessons"
+        : `Chapter ${slide.chapter} · ${LESSON_CHAPTERS[slide.chapter - 1].name} · ${inChapter.indexOf(slide) + 1} of ${inChapter.length}`;
+      lessonTitle.textContent = slide.title;
+      lessonTodo.hidden = !slide.todo;
+      lessonTodoText.innerHTML = slide.todo ?? "";   // written in this file, with <b> around buttons to press
+      lessonText.innerHTML = slide.text;             // written in this file, with <b> around the new words
       showExample(null);
     }
 
@@ -4204,8 +4435,12 @@
     }
 
     // The slide's own buttons, like "Another random try".
+    // A tool can have a "label" that changes (a getter) and an "inactive" test: inactive buttons
+    // look faded but can still be pressed, so Harty can say why nothing happens.
+    let toolButtons = [];    // [tool, button] for each button on screen
     function showTools(slide) {
       lessonTools.replaceChildren();
+      toolButtons = [];
       if (slide.toolsLabel) {
         const label = document.createElement("span");
         label.className = "lesson-tools-label";
@@ -4216,7 +4451,6 @@
         const button = document.createElement("button");
         button.type = "button";
         button.className = "lesson-tool";
-        button.textContent = tool.label;
         if (tool.title) {
           button.title = tool.title;
           button.setAttribute("aria-label", tool.title);
@@ -4233,8 +4467,24 @@
           tool.action();
         });
         lessonTools.append(button);
+        toolButtons.push([tool, button]);
       }
       lessonTools.hidden = lessonTools.childElementCount === 0;
+      refreshTools();
+    }
+
+    function refreshTools() {
+      for (const [tool, button] of toolButtons) {
+        button.textContent = tool.label;
+        if (tool.inactive) button.setAttribute("aria-disabled", String(tool.inactive()));
+      }
+    }
+
+    // Chapter 4: where Harty is in the loop of policy iteration ("evaluate" or "improve" lights
+    // up). "" shows the loop with nothing lit, and null hides it.
+    function showLoop(phase) {
+      loopPanel.hidden = phase === null;
+      loopPanel.querySelectorAll(".loop-step").forEach((step) => step.classList.toggle("is-now", step.dataset.phase === phase));
     }
 
     function updateLessonNav() {
@@ -4246,7 +4496,7 @@
       if (run === null) return;
       if (run.slide === run.slides.length - 1) {
         leaveRun();
-        note("That's policy iteration! Change the maze and press Run again.");
+        note("That's the whole lesson! Change the maze and press Run again.");
       } else {
         goToSlide(run.slide + 1);
       }
@@ -4262,47 +4512,93 @@
     // ---------- The slides ----------
 
     function buildSlides(run) {
-      const { maze, learning } = run;
+      const { maze, learning, shortcut } = run;
       const { rounds } = learning;
-      const walker = rounds[0];             // scores moving at random (policy 0) and makes policy 1
+      const walker = rounds[0];             // evaluates moving at random (policy 0) and makes policy 1
       const policy1 = walker.plan;
-      const round2 = rounds[1];             // scores policy 1
+      const round2 = rounds[1];             // evaluates policy 1
       const lastRound = rounds[rounds.length - 1];
       const bestPlan = lastRound.plan;
       const bestValues = lastRound.values;
+      // Every evaluation, sweep by sweep: traces[k] evaluates policy k (traces[0] is moving at random).
+      const traces = rounds.map((round, index) => index === 0
+        ? makeTrace(maze, round.valueSweeps, "average")
+        : makeTrace(maze, round.valueSweeps, "arrow", round.scored));
+      const walkerTrace = traces[0];
+      const shortcutTrace = makeTrace(maze, shortcut.sweeps, "best");
+      const walkerSweeps = sweepCount(walkerTrace);
+      const totalSweeps = traces.reduce((sum, trace) => sum + sweepCount(trace), 0);
+      const shortcutCount = sweepCount(shortcutTrace);
+      const holes = maze.holes.size > 0;
+      const states = lessonStates(maze);
       const slides = [];
-      const add = (step, slide) => slides.push({ step, ...slide });
+      const add = (chapter, slide) => slides.push({ chapter, ...slide });
       const showWalker = () => {
         run.view.values = walker.values;
         run.view.legend = "Value with random moves";
       };
-      const keysNote = "Arrow keys, W A S D, the arrow pad, or tap a square next to me.";
+      const showBest = () => {
+        run.view.values = bestValues;
+        run.view.legend = "Value with the best policy";
+        run.view.arrows = bestPlan;
+      };
+      const walkerSweepsShown = { trace: walkerTrace, legend: "Value with random moves" };
+      const creditsTool = { label: "Credits", action: openCredits };
+      // The buttons of a slide where the class steps through the sweeps.
+      const sweepTools = (playToEnd = true) => [
+        { label: "Next sweep", inactive: sweepsFinished, action: nextSweep },
+        ...(playToEnd ? [{ label: "Play to the end", inactive: sweepsFinished, action: () => replay((play) => playSweepsTo(play, sweepCount(play.run.sweep.trace))) }] : []),
+        { label: "Reset to 0", action: () => replay(async (play) => {
+          play.run.sweep.chosen = null;
+          showSweep(0);
+        }) }
+      ];
 
-      // 1. The maze: the rules of the game, learned by playing it
+      // The list of chapters
+      const chapterList = LESSON_CHAPTERS.map((chapter, index) =>
+        `<li><button type="button" class="chapter-link" data-chapter="${index + 1}"><span class="chapter-num">${index + 1}</span><span><strong>${chapter.name}</strong><small>${chapter.about}</small></span></button></li>`).join("");
+      add(0, {
+        title: "Pick a chapter",
+        say: "Let's learn! Start at chapter 1, or pick a chapter.",
+        noReturn: true,
+        todo: "Press <b>Next</b> to start at chapter 1, or tap a chapter.",
+        text: `<ol class="chapter-list">${chapterList}</ol>`,
+        tools: [creditsTool]
+      });
+
+      // 1. The game: the rules of the game, learned by playing it
       add(1, {
+        title: "Agent and environment",
         say: "This maze is my world. Walk me around!",
         noReturn: true,
-        note: keysNote,
+        todo: "Walk Harty around: the arrow keys, W A S D, the arrow pad, or tap a square next to him.",
         text: "In reinforcement learning, a learner called the <b>agent</b> acts in an <b>environment</b>. Here Harty is the agent, and the maze is his environment. Each square he can stand on is a <b>state</b>.",
         show: () => markStates(maze)
       });
       add(1, {
+        title: "Actions",
         say: "In every state I can take 4 actions.",
         noReturn: true,
-        note: "Watch me try each one.",
+        todo: "Watch Harty try each action from his square.",
         text: "The <b>actions</b> are up, down, left and right. A wall or the edge of the maze blocks a move: Harty bumps, stays where he is, and it still counts as a move." +
           (maze.portals.size > 0 ? " A portal sends him straight to its partner square." : ""),
         show: () => showExample(actionsText(maze, maze.start)),
         play: tryActions
       });
       add(1, {
+        title: "Rewards",
         say: "Rewards tell me how well I'm doing.",
         noReturn: true,
+        todo: holes
+          ? `Find the ${formatReward(REWARD_TREASURE)} and the ${formatReward(REWARD_HOLE)} on the maze, then press <b>Next</b>.`
+          : `Find the ${formatReward(REWARD_TREASURE)} on the maze, then press <b>Next</b>.`,
         text: `Each move earns a <b>reward</b>: ${formatReward(REWARD_TREASURE)} for landing on the treasure, ${formatReward(REWARD_HOLE)} for falling in a hole, ${formatReward(REWARD_STEP)} for any other move. The treasure or a hole ends the try. One try is an <b>episode</b>. An episode also stops after ${MAX_MOVES_PER_ATTEMPT} moves.`,
         show: () => markRewards(maze)
       });
       add(1, {
+        title: "The return",
         say: "The sooner I get the treasure, the better!",
+        todo: "Read the example below, then press <b>Next</b>.",
         text: `The <b>return</b> adds up an episode's rewards, but later ones count less: each extra move multiplies a reward by ${DISCOUNT}, the <b>discount</b>. Treasure on move 1: return 1. On move 3: ${DISCOUNT} × ${DISCOUNT} = ${formatValue(DISCOUNT ** 2)}. A hole counts the same way, with ${formatReward(REWARD_HOLE)}.`,
         show: () => {
           markRewards(maze);
@@ -4310,10 +4606,11 @@
         }
       });
       add(1, {
+        title: "Your try",
         handName: "Your try",
         say: "Your turn! Get me to the treasure, fast.",
-        note: keysNote,
-        text: "Steer Harty to the treasure and keep out of the holes. Watch the panel: state, action, reward, next state. Your return shows how well you did. Play again and try to raise it with fewer moves.",
+        todo: "Steer Harty to the treasure. Then press <b>Start again</b> and try to raise your return.",
+        text: `${holes ? "Keep out of the holes. " : ""}Watch the panel: state, action, reward, next state. Your return shows how well you did: the fewer moves, the higher it is.`,
         show: () => markRewards(maze),
         play: waitForClass,
         tools: [{ label: "Start again", action: () => replay(waitForClass) }],
@@ -4326,55 +4623,84 @@
           note("Play again, or press Next when you're ready.");
         }
       });
-
       add(1, {
+        title: "Chapter 1 done",
         thought: "?",
         say: "You can see the way. I have to work it out!",
-        text: "Harty knows the rules, but not which moves pay off later. A <b>policy</b> is his way of choosing an action in every state. He learns with a recipe: 1. start with a policy, 2. score it, 3. improve it, 4. repeat until it stops changing. He has no favorite moves yet, so he starts with <b>policy 0</b>: random moves, each action 1 time in 4.",
+        todo: "Press <b>Next</b> for chapter 2: policy evaluation.",
+        text: "<ul class=\"lesson-list\"><li>Harty is the <b>agent</b>, the maze is his <b>environment</b>, and each square is a <b>state</b>.</li><li>Each <b>action</b> earns a <b>reward</b>. One try is an <b>episode</b>.</li><li>The <b>return</b> adds up an episode's rewards, and later ones count less.</li></ul>Harty knows the rules, but not which moves pay off later. He learns in three steps: find out how good his way of choosing moves is (chapter 2), improve it (chapter 3), and repeat (chapter 4).",
         play: lightRecipe
       });
 
-      // 2. Moving at random (policy 0): the numbers first, like the notebook's "Before learning"
-      // picture, then the movement that explains them.
-      const impression = firstImpression(maze, walker.values);
+      // 2. Policy evaluation: how good is moving at random? Every value starts at 0 and the class
+      // steps through the sweeps, like policy_evaluation() and uniform_random_policy_value().
       add(2, {
+        title: "Policy 0: random moves",
         thought: "?",
-        say: "How good is moving at random, square by square?",
-        note: "Watch the numbers spread from the treasure and the holes.",
-        text: "Each square's number is its <b>value</b>: the return Harty can expect from there with this policy, on average. Purple is good, red is bad. He can see the whole maze, so he works the values out without taking a step.",
-        show: () => { run.view.legend = "Value with random moves"; },
-        play: (play) => playSweeps(play, walker, null, "Value with random moves", false)
-      });
-      add(2, {
-        thought: "?",
-        say: impression.say,
-        text: impression.text,
-        show: () => {
-          showWalker();
-          showExample(startValueText(maze, walker.values));
-        }
-      });
-      add(2, {
-        thought: "?",
-        say: "Watch me pick random moves.",
-        note: "Watch the panel: state, action, reward, next state.",
-        text: "Before each move Harty picks at random: see the ? above his head. Many random tries do end in a hole, but only after many moves, and a reward that comes late counts much less. That's why the numbers are close to 0. One try is just one sample of the average.",
-        note: "Tap a purple square or a red one to start a random try there.",
-        show: showWalker,
-        tools: [{ label: "Another random try", action: () => replay(walkAtRandom) }],
+        say: "I have no favorite moves yet, so I pick at random.",
+        todo: "Watch a random try. Press <b>Another random try</b>, or tap a square to start one there.",
+        text: "A <b>policy</b> is how Harty chooses an action in every state. With no favorites yet, he starts with <b>policy 0</b>: random moves, each action 1 time in 4. How good is it? One try is just luck. Harty wants each square's <b>value</b>: the return he can expect from there, on average.",
         play: walkAtRandom,
+        tools: [{ label: "Another random try", action: () => replay(walkAtRandom) }],
         onSquare: (cell) => {
-          if (!lessonStates(maze).includes(cell)) return;
+          if (!states.includes(cell)) return;
           replay((play) => walkAtRandom(play, cell));
         }
       });
       add(2, {
+        title: "Start at 0, then sweep",
+        thought: "?",
+        say: "My value depends on my neighbors' values. And theirs on theirs!",
+        todo: "Press <b>Next sweep</b>. Then tap a square that changed to see why.",
+        text: `A move's <b>score</b> is its reward + ${DISCOUNT} × the value of the square it lands on (just the reward if the move ends the episode). Moving at random, a square's value is the average of its 4 scores: the <b>Bellman equation</b>. But every value needs other values first! So Harty starts them all at 0 and updates every square at once. That is one <b>sweep</b>.`,
+        sweeps: { ...walkerSweepsShown, from: 0 },
+        onSweep: (at) => hartySays(at === 0 ? "My value depends on my neighbors' values. And theirs on theirs!"
+          : at === 1 ? `Only squares one move from the treasure${holes ? " or a hole" : ""} changed. Why?`
+          : `Sweep ${at}: the numbers spread one move further.`),
+        tools: sweepTools(false),
+        onSquare: pickSweepSquare
+      });
+      add(2, {
+        title: "Sweep after sweep",
+        thought: "?",
+        say: "Each sweep, the numbers spread one move further.",
+        todo: "Press <b>Next sweep</b> a few times. Tap any square to see how its new value comes from the old ones.",
+        text: `Each sweep uses the values from the sweep before. A square gets a number once one of its moves reaches a square that has one, so the numbers spread out from the treasure${holes ? " and the holes" : ""}. Purple is good, red is bad.`,
+        sweeps: { ...walkerSweepsShown, from: "last" },
+        tools: sweepTools(),
+        onSquare: pickSweepSquare
+      });
+      const tooMany = sweepCount(walkerTrace) >= RANDOM_WALK_SWEEPS && biggestChange(maze, walkerTrace, walkerSweeps) >= RANDOM_WALK_TOLERANCE;
+      const playWalkerSweeps = async (play) => {
+        if (sweepsFinished()) showSweep(0);
+        await playSweepsTo(play, walkerSweeps);
+        hartySays(`${walkerSweeps} sweeps, just to evaluate one policy!`);
+      };
+      add(2, {
+        title: "When does it stop?",
+        thought: "?",
+        say: "When can I stop sweeping?",
+        todo: "Watch the sweep counter until it stops.",
+        text: (tooMany
+          ? `The changes get smaller every sweep, but Harty stops after ${RANDOM_WALK_SWEEPS} sweeps, his limit.`
+          : `The changes get smaller every sweep, but never quite reach 0. Harty stops when no value changes by ${formatChange(RANDOM_WALK_TOLERANCE)} or more.`) +
+          ` The numbers you can see stopped changing after sweep ${lastVisibleChange(maze, walkerTrace)}, but he swept ${walkerSweeps} times in all. That is a lot of work just to find out how good one policy is!`,
+        sweeps: { ...walkerSweepsShown, from: "last" },
+        play: playWalkerSweeps,
+        tools: [{ label: "Watch again", action: () => replay(async (play) => {
+          showSweep(0);
+          await playWalkerSweeps(play);
+        }) }],
+        onSquare: pickSweepSquare
+      });
+      add(2, {
+        title: "What the values mean",
         thought: "?",
         dice: true,
         handName: "Your random try",
         say: "Your turn! You press, the dice picks the move.",
-        note: "Press any arrow, W A S D, or Roll the dice.",
-        text: "Now you move Harty, but the dice picks every action, just like policy 0. How far does he get? Compare your return with the number on his start square: that number is the average over all possible tries.",
+        todo: "Press any arrow, W A S D, or <b>Roll the dice</b>: the dice picks every move. Compare your return with the number on Harty's square.",
+        text: `${firstImpression(maze, walker.values)} A value is an average: one try can be lucky or unlucky, but over many tries the returns average out to the number on the square.`,
         show: showWalker,
         play: waitForClass,
         tools: [
@@ -4391,15 +4717,24 @@
           note("Roll again, or press Next when you're ready.");
         }
       });
+      add(2, {
+        title: "Chapter 2 done",
+        thought: "?",
+        say: "Now I know how good moving at random is. Can I do better?",
+        todo: "Press <b>Next</b> for chapter 3: policy improvement.",
+        text: `<ul class="lesson-list"><li><b>Policy evaluation</b> works out the value of every square for one policy.</li><li>Every value starts at 0. Each <b>sweep</b> updates them all with the <b>Bellman equation</b>, using the values from the sweep before.</li><li>It stops when the values stop changing. For moving at random, that took ${walkerSweeps} sweeps.</li></ul>`,
+        show: showWalker
+      });
 
-      // 3. Improve the policy: from policy 0's numbers to a plan
+      // 3. Policy improvement: from policy 0's values to a plan
       const quiz = quizSquare(maze, walker);
       const stay = stayPutSquare(maze, walker);
       add(3, {
+        title: "Which way?",
         thought: "?",
         say: `I'm on ${squareName(quiz)}. Which way should I go? Use the numbers!`,
-        note: "Press an arrow, W A S D, or tap a square next to me.",
-        text: `Which way is best? A move's <b>score</b> is its reward + ${DISCOUNT} × the value of the square it lands on (just the reward if the move ends the episode). Press a direction: Harty only leans that way and shows its score. Find the best one.`,
+        todo: "Press the arrow you think is best. Harty only leans that way and shows its score. Find the best one!",
+        text: `Harty uses the values of moving at random from chapter 2. A move's <b>score</b> is its reward + ${DISCOUNT} × the value of the square it lands on (just the reward if the move ends the episode). Which move scores best here?`,
         show: () => {
           showWalker();
           run.view.picked = quiz;
@@ -4409,29 +4744,31 @@
         onMove: (action) => quizPress(walker, quiz, action).catch(stopQuietly)
       });
       add(3, {
+        title: "Average or best?",
         thought: "?",
         say: "Random me takes the average. Smart me takes the best!",
+        todo: "Tap any square to see its four scores and their average.",
         text: "Moving at random, Harty gets the average of the four scores, and that average is this square's value. Choosing the best score instead is <b>policy improvement</b>: it can only do as well as the average, or better.",
         show: () => {
           showWalker();
           run.view.picked = quiz;
           run.view.comparing = quiz;
-          showActionScores(maze, walker, quiz);
+          showActionScores(quiz, walker.scores[quiz]);
           showExample(averageText(maze, walker, quiz));
         },
-        note: "Tap any square to see its four scores.",
         play: (play) => placeHarty(play, quiz),
         onSquare: (cell) => {
-          if (!lessonStates(maze).includes(cell)) return;
+          if (!states.includes(cell)) return;
           showScoresOn(walker, cell);
           showExample(averageText(maze, walker, cell));
         }
       });
       if (stay !== null) {
         add(3, {
+          title: "Stay or go?",
           thought: "?",
           say: `I'm on ${squareName(stay)}. Should I leave? Check the scores!`,
-          note: "Press an arrow, W A S D, or tap a square next to me.",
+          todo: "Press the arrows to compare staying put with moving away.",
           text: `A bump keeps Harty on his square, so it scores ${DISCOUNT} × his own value. Moving scores ${DISCOUNT} × the value of the square he moves to. Which is best here?`,
           show: () => {
             showWalker();
@@ -4446,48 +4783,74 @@
         });
       }
       add(3, {
+        title: "Policy 1",
         say: "My best move in every square: that's policy 1!",
-        note: "Tap a square to see why its arrow won.",
+        todo: "Tap a square to see why its arrow won. <b>Walk policy 1</b> shows where it takes Harty.",
         text: `Every square now has one arrow, its best-scoring move. This is <b>policy 1</b>. Unlike policy 0 it never rolls a dice: same square, same move. ${describePlan(maze, policy1)} ${braveText(maze, policy1)}`,
         show: () => {
           showWalker();
           run.view.arrows = policy1;
         },
-        play: async () => glowSquares(lessonStates(maze)),
+        play: async () => glowSquares(states),
+        tools: [walkTool(policy1, "Policy 1")],
         onSquare: (cell) => {
-          if (!lessonStates(maze).includes(cell)) return;
+          if (!states.includes(cell)) return;
           showScoresOn(walker, cell);
           showExample(averageText(maze, walker, cell));
         }
       });
+      add(3, {
+        title: "Chapter 3 done",
+        say: "Policy 1! But how good is it?",
+        todo: "Press <b>Next</b> for chapter 4: policy iteration.",
+        text: "<ul class=\"lesson-list\"><li><b>Policy improvement</b>: in every square, switch to the move with the best score.</li><li>The scores come from the values that policy evaluation worked out.</li><li>The best score is never worse than the average, so the new policy is never worse than the old one.</li></ul>To know how good policy 1 really is, Harty has to evaluate it, sweep by sweep. Evaluate, improve, evaluate, improve: that is chapter 4.",
+        show: () => {
+          showWalker();
+          run.view.arrows = policy1;
+        }
+      });
 
-      // 4. Score the new policy: policy evaluation, then what improving promised
+      // 4. Policy iteration: evaluate, improve, evaluate, improve... until improving changes nothing
+      const tally = (count) => `Sweeps so far: ${traces.slice(0, count).map(sweepCount).join(" + ")} = ${traces.slice(0, count).reduce((sum, trace) => sum + sweepCount(trace), 0)}.`;
+      add(4, {
+        title: "Evaluate, improve, repeat",
+        loop: "",
+        say: "Evaluate, improve, and again, until nothing changes.",
+        todo: "Read, then press <b>Next</b> to evaluate policy 1.",
+        text: `<b>Policy iteration</b> repeats two steps: <b>evaluate</b> the policy (chapter 2), then <b>improve</b> it (chapter 3), until improving changes no arrow. Harty has done it once: he evaluated moving at random (${walkerSweeps} sweeps) and improved it into policy 1. Next: evaluate policy 1.`,
+        show: () => {
+          showWalker();
+          run.view.arrows = policy1;
+        }
+      });
+      const policy1Sweeps = sweepCount(traces[1]);
+      add(4, {
+        title: "Evaluate policy 1",
+        loop: "evaluate",
+        say: "Every value starts at 0 again. Sweep!",
+        todo: "Watch the sweeps. Then tap a square to see how its value was worked out.",
+        text: `The same sweeps as in chapter 2, but with arrows there is no average: a square's value = reward + ${DISCOUNT} × the value of the square its arrow leads to. Each sweep reaches one move further back along the arrows.`,
+        show: () => { run.view.arrows = policy1; },
+        sweeps: { trace: traces[1], legend: "Value with policy 1", from: 0 },
+        play: async (play) => {
+          await playSweepsTo(play, policy1Sweeps);
+          hartySays(`Evaluating policy 1 took ${plural(policy1Sweeps, "sweep")}.`);
+        },
+        tools: sweepTools(),
+        onSquare: pickSweepSquare
+      });
       const showPolicy1 = () => {
         run.view.values = round2.values;
         run.view.legend = "Value with policy 1";
         run.view.arrows = policy1;
       };
+      const wentDown = states.some((cell) => Math.round(round2.values[cell] * 100) < Math.round(walker.values[cell] * 100));
       add(4, {
-        say: "New policy, new values. Let me score policy 1.",
-        note: "Watch the values spread, one sweep at a time.",
-        text: `<b>Policy evaluation</b> works out every value for one policy. With arrows there is no luck: value = reward + ${DISCOUNT} × the value of the square the arrow leads to. Harty starts every value at 0 and sweeps the maze again and again: each sweep reaches one move further along the arrows.`,
-        show: () => {
-          run.view.arrows = policy1;
-          run.view.legend = "Value with policy 1";
-        },
-        play: (play) => playSweeps(play, round2, walker.values, "Value with policy 1"),
-        tools: [{ label: "Watch again", action: () => replay((play) => playSweeps(play, round2, walker.values, "Value with policy 1")) }],
-        onSquare: (cell) => {
-          if (!lessonStates(maze).includes(cell) || run.demo !== null) return;
-          run.view.picked = cell;
-          drawLessonView();
-          showExample(valueWorkedOut(maze, round2, cell));
-        }
-      });
-      const wentDown = lessonStates(maze).some((cell) => Math.round(round2.values[cell] * 100) < Math.round(walker.values[cell] * 100));
-      add(4, {
+        title: "Better than policy 0?",
+        loop: "",
         say: wentDown ? "Policy 1 is better than moving at random." : "No number went down! Policy 1 beats random moves.",
-        text: betterText(maze, walker.values, round2.values),
+        todo: "Switch between the <b>Policy 0</b> and <b>Policy 1</b> numbers. Then tap a square to watch policy 1 from there.",
+        text: `${betterText(maze, walker.values, round2.values)} A square's value is exactly the return Harty gets by following the arrows from there.`,
         show: () => {
           showPolicy1();
           showExample(startCompareText(maze, walker.values, round2.values));
@@ -4497,23 +4860,12 @@
           { label: "Policy 0", pressed: false, action: () => { showWalker(); drawLessonView(); } },
           { label: "Policy 1", pressed: true, action: () => { showPolicy1(); drawLessonView(); } },
           walkTool(policy1, "Policy 1")
-        ]
-      });
-      add(4, {
-        say: "Let's test policy 1 from my start square.",
-        note: "Then tap a square to start policy 1 there.",
-        text: policyOneTest(maze, policy1, round2.values),
-        show: showPolicy1,
-        play: (play) => walkPolicy(play, policy1, "Policy 1"),
-        tools: [{ label: "Watch again", action: () => replay((play) => walkPolicy(play, policy1, "Policy 1")) }],
+        ],
         onSquare: (cell) => {
-          if (!lessonStates(maze).includes(cell)) return;
+          if (!states.includes(cell)) return;
           replay((play) => walkPolicy(play, policy1, `From ${squareName(cell)}`, cell));
         }
       });
-
-      // 5. Repeat: improve, then score, until improving changes nothing. One slide per round,
-      // after a guess at which square changes first.
       if (round2.changedCells.length > 0) {
         const reveal = () => {
           run.view.arrows = round2.plan;
@@ -4521,17 +4873,15 @@
           drawLessonView();
           glowSquares(round2.changedCells);
         };
-        add(5, {
+        add(4, {
+          title: "Improve again",
+          loop: "improve",
           say: "Same rule again. Which square will change? Tap it!",
-          note: "Tap your guess on the maze.",
-          text: `Harty improves policy 1 the same way: every square takes the move with the best score, now using policy 1's values. Which square will switch its arrow? Hint: look for a square that could step onto a purple one.`,
-          show: () => {
-            run.view.values = round2.values;
-            run.view.legend = "Value with policy 1";
-            run.view.arrows = policy1;
-          },
+          todo: "Tap the square you think will switch its arrow, or press <b>Show me</b>.",
+          text: "Harty improves policy 1 the same way: every square takes the move with the best score, now using policy 1's values. Which square will switch its arrow? Hint: look for a square that could step onto a purple one.",
+          show: showPolicy1,
           onSquare: (cell) => {
-            if (!lessonStates(maze).includes(cell)) return;
+            if (!states.includes(cell)) return;
             const names = round2.changedCells.map(squareName).join(", ");
             hartySays(round2.changedCells.includes(cell)
               ? `Yes! ${squareName(cell)} found a better move.`
@@ -4543,25 +4893,29 @@
       }
       const skip = { label: "Skip to the best policy", action: () => goToSlide(slides.findIndex((slide) => slide.isOptimal)) };
       const playAll = {
-        get label() { return run.autoRounds ? "Pause" : "Play all rounds"; },
+        get label() { return run.autoRounds ? "Pause" : "Play all policies"; },
         action: () => {
           if (run.autoRounds) {
             run.autoRounds = false;
-            showTools(run.slides[run.slide]);
+            refreshTools();
           } else {
             run.autoRounds = true;
             goToSlide(run.slide, true);
           }
         }
       };
+      // One slide for each new policy: improve (the arrows that change), then evaluate (the sweeps).
       rounds.forEach((round, index) => {
-        if (index === 0 || round.changedCells.length === 0) return;   // round 1 was steps 2 to 4
+        if (index === 0 || round.changedCells.length === 0) return;   // policy 1 came from chapters 2 and 3
         const before = index;                // this round improved policy `index`...
         const after = index + 1;             // ...into policy `index + 1`,
-        const next = rounds[index + 1];      // which the next round scores
-        add(5, {
-          say: `Round ${round.number}: ${plural(round.changedCells.length, "square")} found a better move.`,
-          text: `Same two steps again. Improve: each square takes its best move, using policy ${before}'s values; the orange arrows changed. Score: work out policy ${after}'s values. An arrow only changes when its new move scores higher, so no number ever goes down.`,
+        const trace = traces[after];         // which the next round evaluates
+        add(4, {
+          title: `Policy ${after}`,
+          loop: "improve",
+          say: `Improve: ${plural(round.changedCells.length, "square")} found a better move. That's policy ${after}!`,
+          todo: "Watch: first the orange arrows change, then the sweeps evaluate the new policy. <b>Play all policies</b> carries on by itself.",
+          text: `<b>Improve:</b> every square takes its best move, using policy ${before}'s values. The orange arrows changed. <b>Evaluate:</b> every value starts at 0 again, and Harty sweeps until they settle. The new values are never lower than the old ones.`,
           show: () => {
             run.view.values = round.values;
             run.view.legend = `Value with policy ${before}`;
@@ -4569,88 +4923,55 @@
             run.view.changed = round.changedCells;
             showExample(changedText(round));
           },
-          play: (play) => playRound(play, round, next, after),
-          tools: [
-            walkTool(round.plan, `Policy ${after}`),
-            ...(next !== undefined ? [{ label: "Show the sweeps", action: () => replay((play) => playSweeps(play, next, round.values, `Value with policy ${after}`)) }] : []),
-            playAll,
-            skip
-          ]
+          play: (play) => playRound(play, round, trace, after, tally(after + 1)),
+          tools: [walkTool(round.plan, `Policy ${after}`), playAll, skip],
+          onSquare: (cell) => {
+            if (run.sweep !== null) pickSweepSquare(cell);
+          }
         });
       });
-      add(5, {
+      add(4, {
         isOptimal: true,
+        title: "Optimal!",
+        loop: "",
         say: "Nothing changed this time. My policy is optimal!",
-        text: `When improving changes no arrow, every arrow is already the best move for its values, and no other policy scores higher on any square: the policy is <b>optimal</b>. Score, improve, repeat until nothing changes: that is <b>policy iteration</b>. Harty scored and improved ${rounds.length} times.`,
+        todo: "Read, then press <b>Next</b> to watch the best policy.",
+        text: `When improving changes no arrow, every arrow is already the best move for its values, and no policy scores higher on any square: the policy is <b>optimal</b>. Evaluate, improve, repeat until nothing changes: that's <b>policy iteration</b>. Harty evaluated ${rounds.length} policies, with ${totalSweeps} sweeps in all.`,
         show: () => {
-          run.view.values = bestValues;
-          run.view.legend = "Value with the best policy";
-          run.view.arrows = bestPlan;
-          showExample(rounds.length > 2
-            ? `Policy 0 (moving at random), then policies 1 to ${rounds.length - 1}. Round ${rounds.length} changed nothing.`
-            : "Policy 0 (moving at random), then policy 1. Round 2 changed nothing.");
+          showBest();
+          showExample(sweepsPerPolicyText(traces));
         },
         play: async () => sparkles(cellCenter(maze.treasure))
       });
-
-      // 6. The best policy: follow it, match it, start it anywhere, then try to beat it
       const walkBest = (play) => walkPolicy(play, bestPlan, "Best policy");
-      const showBest = () => {
-        run.view.values = bestValues;
-        run.view.legend = "Value with the best policy";
-        run.view.arrows = bestPlan;
-      };
       const bestWalk = simulateAttempt(maze, (cell) => bestPlan[cell]);
-      add(6, {
+      add(4, {
+        title: "Follow the best policy",
         say: "Now I just follow my arrows. No more guessing!",
-        text: bestPolicyText(maze, bestValues, bestWalk),
+        todo: "Watch Harty follow his arrows. Then tap any square to start him there.",
+        text: `${bestPolicyText(maze, bestValues, bestWalk)} A policy has an action for every state, so Harty knows the way from anywhere.`,
         show: showBest,
         play: walkBest,
-        tools: [{ label: "Watch again", action: () => replay(walkBest) }]
-      });
-      add(6, {
-        handName: "Your try",
-        say: "Your turn! Can you match my best policy?",
-        note: keysNote,
-        text: "Play Harty yourself from his start square. The arrows show the best policy if you want a hint. Can you reach the treasure in as few moves, and get the same return? You can tie the best policy, but you can't beat it.",
-        show: showBest,
-        play: waitForClass,
-        tools: [
-          { label: "Start again", action: () => replay(waitForClass) },
-          { label: "Hide arrows", pressed: false, action: () => { run.view.arrows = null; run.view.values = null; drawLessonView(); stopThinking(run.runner); } },
-          { label: "Show arrows", pressed: true, action: () => { showBest(); drawLessonView(); } }
-        ],
-        onHandEnd: ({ outcome, total, moves }) => {
-          const best = `Best policy: ${plural(bestWalk.moves.length, "move")}, return ${formatReturn(bestValues[maze.start])}.`;
-          hartySays(outcome === "treasure"
-            ? `You: ${plural(moves.length, "move")}, return ${formatReturn(total)}. ${best}`
-            : `No treasure this time. ${best}`);
-          note("Play again, or press Next when you're ready.");
-        }
-      });
-      add(6, {
-        say: "Tap any square, and I'll start from there.",
-        note: "Tap a square on the maze.",
-        text: "A policy has an action for every state, so Harty knows the way from anywhere, not only from his start square. Tap a far corner, or a square right next to a hole. Its number is the return he will get.",
-        show: showBest,
+        tools: [{ label: "Watch again", action: () => replay(walkBest) }],
         onSquare: (cell) => {
-          if (!lessonStates(maze).includes(cell)) {
+          if (!states.includes(cell)) {
             note("Pick a square without the treasure or a hole.", true);
             return;
           }
-          note("");
+          note(slideNote(run.slides[run.slide]));
           replay((play) => walkPolicy(play, bestPlan, `From ${squareName(cell)}`, cell));
         }
       });
-      // The class's own arrows, scored straight away: some numbers go down, none go up.
+      // The class's own arrows, evaluated straight away: some numbers go down, none go up.
       const myPlan = { ...bestPlan };
-      add(6, {
+      add(4, {
+        title: "Can you beat it?",
         say: "Your turn! Change my arrows. Can you do better?",
-        note: "Tap a square to turn its arrow.",
-        text: "Tap a square to turn its arrow, and Harty scores your new policy straight away. Watch the numbers: some go down, but none can go up. That is what optimal means: no policy scores higher on any square.",
+        todo: "Tap a square to turn its arrow. Can you make any number go up?",
+        text: "Each tap turns an arrow, and Harty evaluates your new policy straight away. Watch the numbers: some go down, but none can go up. That is what optimal means: no policy scores higher on any square.",
         show: () => showMyPlan(maze, myPlan, bestPlan, bestValues),
         onSquare: (cell) => {
-          if (!lessonStates(maze).includes(cell)) return;
+          if (!states.includes(cell)) return;
           myPlan[cell] = ACTIONS[(ACTIONS.indexOf(myPlan[cell]) + 1) % ACTIONS.length];
           showMyPlan(maze, myPlan, bestPlan, bestValues);
           drawLessonView();
@@ -4661,13 +4982,77 @@
           { label: "Reset arrows", action: () => { Object.assign(myPlan, bestPlan); showMyPlan(maze, myPlan, bestPlan, bestValues); drawLessonView(); } }
         ]
       });
+      add(4, {
+        title: "Chapter 4 done",
+        say: "I found the best policy! It took a lot of sweeps, though.",
+        todo: "Press <b>Next</b> for chapter 5: value iteration.",
+        text: `<ul class="lesson-list"><li><b>Policy iteration</b>: evaluate, improve, repeat, until improving changes no arrow.</li><li>The policy it ends with is <b>optimal</b>: the best return from every square.</li><li>Every evaluation started at 0 and swept until the values settled: ${totalSweeps} sweeps in all.</li></ul>`,
+        show: showBest
+      });
 
-      // 7. The discount
+      // 5. Value iteration: the same best policy in far fewer sweeps
+      const shortcutShown = { trace: shortcutTrace, legend: "Value iteration" };
+      const walkShortcut = (play, from) => walkPolicy(play, shortcut.plan, from === undefined ? "Value iteration" : `From ${squareName(from)}`, from);
+      const different = states.filter((cell) => shortcut.plan[cell] !== bestPlan[cell]).length;
+      add(5, {
+        title: "So many sweeps",
+        say: `${totalSweeps} sweeps! Most of them just to evaluate policies.`,
+        todo: "Read, then press <b>Next</b> for a faster way.",
+        text: "Before policy iteration can change a single arrow, it evaluates the whole policy: every value from 0, sweep after sweep, until they settle. Then the next policy starts from 0 again. Evaluating takes many sweeps, and that is why policy iteration is not the best algorithm.",
+        show: () => {
+          showBest();
+          showExample(sweepsPerPolicyText(traces));
+        }
+      });
+      add(5, {
+        title: "Take the best right away",
+        say: "What if every sweep takes the best move straight away?",
+        todo: "Press <b>Next sweep</b> and watch. Tap a square to see which score it took.",
+        text: "Remember chapter 3: random moves take the average of the 4 scores, but a smart Harty takes the best. <b>Value iteration</b> does that in every sweep: a square's new value = the best of its 4 scores. There is no policy to evaluate first. This rule is the <b>Bellman optimality equation</b>.",
+        sweeps: { ...shortcutShown, from: 0 },
+        onSweep: (at) => {
+          if (at === shortcutCount) hartySays(`Done after ${plural(shortcutCount, "sweep")}! Policy iteration needed ${totalSweeps}.`);
+        },
+        tools: sweepTools(),
+        onSquare: pickSweepSquare
+      });
+      add(5, {
+        title: "Same answer, fewer sweeps",
+        say: `${plural(shortcutCount, "sweep")} instead of ${totalSweeps}. The same best policy!`,
+        todo: "Watch Harty follow the arrows value iteration found. Then tap a square to start him there.",
+        text: `Value iteration stopped after ${plural(shortcutCount, "sweep")}, when the values stopped changing: they are the best policy's values. For the arrows, Harty takes the best move in every square, once, at the end. ${different === 0
+          ? "They are the same arrows as policy iteration's best policy."
+          : `${plural(different, "arrow")} ${different === 1 ? "points" : "point"} another way than policy iteration's, but ${different === 1 ? "scores" : "score"} just as high.`} Policy iteration needed ${totalSweeps} sweeps.`,
+        sweeps: { ...shortcutShown, from: "end", quiet: true },
+        show: () => { run.view.arrows = shortcut.plan; },
+        play: (play) => walkShortcut(play),
+        tools: [{ label: "Watch again", action: () => replay((play) => walkShortcut(play)) }],
+        onSquare: (cell) => {
+          if (!states.includes(cell)) return;
+          replay((play) => walkShortcut(play, cell));
+        }
+      });
+      add(5, {
+        title: "Chapter 5 done",
+        say: "The same best policy, in far fewer sweeps!",
+        todo: "Press <b>Next</b> for the extra chapter, or <b>Stop</b> to build a new maze.",
+        text: `<ul class="lesson-list"><li><b>Value iteration</b> improves in every sweep: a square's new value is the best of its 4 scores, the <b>Bellman optimality equation</b>.</li><li>It found the best policy in ${plural(shortcutCount, "sweep")}. Policy iteration needed ${totalSweeps}.</li><li>Both need to know the whole maze. Methods like <b>Q-learning</b> go further: Harty learns from his own tries instead.</li></ul>`,
+        show: () => {
+          run.view.values = shortcutTrace.values[shortcutCount];
+          run.view.legend = "Value iteration";
+          run.view.arrows = shortcut.plan;
+        },
+        tools: [creditsTool]
+      });
+
+      // 6. Extra: the discount
       const discounts = [...new Set([...LESSON_DISCOUNTS, DISCOUNT])].sort((a, b) => a - b);
       const low = discounts[0];
       const high = discounts[discounts.length - 1];
-      add(7, {
+      add(6, {
+        title: "The discount",
         say: "How much do I care about rewards that come later?",
+        todo: `Press ${discounts.slice(0, -1).join(", ")} and ${high}, and compare the numbers and the walk.`,
         text: discountText(run, low, high),
         show: (play) => showDiscount(play, DISCOUNT),
         toolsLabel: "Discount:",
@@ -4697,20 +5082,7 @@
       else if (red.length > 0) parts.push(`${red.length} of ${states.length} squares are red: from there, random moves end in a hole more often, or sooner, than at the treasure.`);
       if (purple.length > 0) parts.push(`${named(purple, "is", "are")} purple: from there, random moves reach the treasure more often, or sooner, than a hole.`);
       if (white > 0) parts.push(`${plural(white, "square")} ${white === 1 ? "is" : "are"} about 0.`);
-      parts.push(`This is Harty's first impression of the maze: ${maze.holes.size > 0 ? "where the danger is, and where the treasure is" : "where the treasure is"}.`);
-      const say = red.length > states.length / 2 ? "Yikes! Moving at random, most squares are risky."
-        : purple.length > states.length / 2 ? "Moving at random isn't so bad in this maze."
-        : "Moving at random: some squares good, some bad.";
-      return { say, text: parts.join(" ") };
-    }
-
-    // "A1, where Harty starts, is worth −0.05: ..." for the random walker's values.
-    function startValueText(maze, values) {
-      const value = values[maze.start];
-      const meaning = Math.abs(value) < 0.005
-        ? "on average, random moves from here earn almost nothing."
-        : value > 0 ? "on average, random moves from here end up a little ahead." : "on average, random moves from here do a little worse than nothing.";
-      return `${squareName(maze.start)}, where Harty starts, is worth ${formatValue(value)}: ${meaning}`;
+      return parts.join(" ");
     }
 
     // "Half brave, half scared": part of policy 1 goes for the treasure, part plays safe.
@@ -4721,45 +5093,16 @@
       return brave && safe ? "Policy 1 is half brave, half scared: near the treasure it goes for it, and where random moves were risky it plays safe." : "";
     }
 
-    // Step 4: policy 1 from Harty's start square, now that its values are known. The value of a
-    // square is the return he gets from there, so the class can predict the walk.
-    function policyOneTest(maze, plan, values) {
-      const walk = simulateAttempt(maze, (cell) => plan[cell]);
-      const start = squareName(maze.start);
-      const stuck = walk.moves.slice(-4).every((move) => move.next === move.from);
-      const what = {
-        treasure: `he reaches the treasure in ${plural(walk.moves.length, "move")}.`,
-        hole: "he falls into a hole.",
-        out: stuck ? `he bumps the same wall until the episode stops at ${MAX_MOVES_PER_ATTEMPT} moves. Safe, but stuck.` : `he goes round in circles until the episode stops at ${MAX_MOVES_PER_ATTEMPT} moves.`
-      }[walk.outcome];
-      // A square to try next: the best one a few moves from the treasure (worth less than 1, so
-      // the discount shows), or else one next to it.
-      const good = lessonStates(maze).filter((cell) => values[cell] > 0.005).sort((a, b) => values[b] - values[a]);
-      const example = good.find((cell) => values[cell] < 0.995) ?? good[0];
-      return `${start} is worth ${formatValue(values[maze.start])} with policy 1, so Harty expects a return of ${formatValue(values[maze.start])}. Watch: ${what}` +
-        (example ? ` Then tap ${squareName(example)} to start policy 1 there: it is worth ${formatValue(values[example])}, and that is the return he gets.` : "");
-    }
-
     // The four scores (and the square's value) for a tapped square, like on the quiz square.
     function showScoresOn(round, cell) {
       run.marks.replaceChildren();
       run.view.picked = cell;
       run.view.comparing = cell;
       drawLessonView();
-      showActionScores(run.maze, round, cell);
+      showActionScores(cell, round.scores[cell]);
     }
 
-    // "E7: value = 0 + 0.9 × 1 (the value of F7) = 0.90" for any square, with a policy's arrows.
-    function valueWorkedOut(maze, round, cell) {
-      const action = round.scored[cell];
-      const step = maze.steps[cell][action];
-      if (step.done) return `${squareName(cell)}: going ${action} ${step.reward > 0 ? "reaches the treasure" : "falls into a hole"}, so its value is ${formatReward(step.reward)}.`;
-      const via = step.portalFrom !== null ? ", through the portal" : "";
-      const where = step.next === cell ? "itself, after bumping the wall" : squareName(step.next) + via;
-      return `${squareName(cell)}: value = ${formatReward(step.reward)} + ${DISCOUNT} × ${formatValue(round.values[step.next])} (the value of ${where}) = ${formatValue(round.values[cell])}`;
-    }
-
-    // Step 7: what the discount changes (the values) and what it doesn't (the quickest safe way),
+    // Chapter 6: what the discount changes (the values) and what it doesn't (the quickest safe way),
     // apart from far squares whose values get too small to notice.
     function discountText(current, low, high) {
       const maze = current.maze;
@@ -4803,7 +5146,7 @@
         (noWay > 0 ? ` ${plural(noWay, "square")} with no way to the treasure ${noWay === 1 ? "stays" : "stay"} at 0.` : "");
     }
 
-    // Step 6: the class's own arrows, scored straight away and compared with the best policy.
+    // Chapter 4: the class's own arrows, evaluated straight away and compared with the best policy.
     function showMyPlan(maze, plan, best, bestValues) {
       const values = valuesOf(scorePlan(maze, plan), plan);
       run.view.values = values;
@@ -5004,7 +5347,7 @@
       addSvg("text", { x: 0, y: 1 }, group).textContent = text;
     }
 
-    // Step 1: a dashed outline on every state.
+    // Chapter 1: a dashed outline on every state.
     function markStates(maze) {
       for (const cell of lessonStates(maze)) {
         const { row, column } = readKey(cell);
@@ -5012,7 +5355,7 @@
       }
     }
 
-    // Step 1: the reward for landing on the treasure and on each hole.
+    // Chapter 1: the reward for landing on the treasure and on each hole.
     function markRewards(maze) {
       const above = (cell) => ({ x: cellCenter(cell).x, y: cellCenter(cell).y - 34 });
       markLabel(above(maze.treasure), formatReward(REWARD_TREASURE), "is-good");
@@ -5030,7 +5373,7 @@
       return `From ${squareName(cell)}: ${moves.join(", ")}.`;
     }
 
-    // Step 1: Harty tries each action from his square: a lean where he can go, a bump where he can't.
+    // Chapter 1: Harty tries each action from his square: a lean where he can go, a bump where he can't.
     async function tryActions(play) {
       const { maze, runner } = play.run;
       await asDemo(play, async () => {
@@ -5047,15 +5390,14 @@
       });
     }
 
-    // The four actions' scores around one square (or only some of them), the best one in yellow.
-    function showActionScores(maze, round, cell, actions = ACTIONS) {
+    // The four actions' scores around one square (or only some of them). The "marked" ones are
+    // yellow: the best ones, unless the slide says otherwise.
+    function showActionScores(cell, scores, actions = ACTIONS, marked = bestActions(scores)) {
       const center = cellCenter(cell);
       const spots = { up: [0, -31], down: [0, 31], left: [-28, 0], right: [28, 0] };
-      const best = Math.max(...ACTIONS.map((action) => round.scores[cell][action]));
       for (const action of actions) {
         const [dx, dy] = spots[action];
-        const score = round.scores[cell][action];
-        markLabel({ x: center.x + dx, y: center.y + dy }, formatValue(score), isTie(score, best) ? "is-best" : "is-plain", true);
+        markLabel({ x: center.x + dx, y: center.y + dy }, formatValue(scores[action]), marked.includes(action) ? "is-best" : "is-plain", true);
       }
     }
 
@@ -5085,55 +5427,228 @@
       return visibleBest(round, cell) === null ? `Best: ${tied[0]}, but only by less than 0.01.` : `Best: ${tied[0]}.`;
     }
 
-    // Policy evaluation, sweep by sweep: the values spread out from the treasure and the holes.
-    // "previous" is the values of the policy before (for the worked example at the end), "legend"
-    // says whose values they are, and "explain" adds the sweep counter and the worked example.
-    async function playSweeps(play, round, previous, legend, explain = true) {
-      await asDemo(play, async () => {
-        const all = round.valueSweeps;
-        // Moving at random takes many sweeps whose changes are too small to see: show the first ones.
-        const sweeps = all.length > 30 ? [...all.slice(0, 24), all[all.length - 1]] : all;
-        const time = Math.min(SWEEP_TIME_MS, SWEEPS_TIME_LIMIT_MS / sweeps.length);
-        // Every evaluation starts from values of 0, like policy_evaluation() in the notebook.
-        play.run.view.values = Object.fromEntries(lessonStates(play.run.maze).map((cell) => [cell, 0]));
-        play.run.view.legend = legend;
-        drawLessonView();
-        if (explain) showExample("Every value starts at 0.");
-        for (const [index, values] of sweeps.entries()) {
-          await wait(play, time);
-          play.run.view.values = values;
-          drawLessonView();
-          if (explain) showExample(`Sweep ${index + 1} of ${sweeps.length}`);
-        }
-      });
-      if (!explain) return;
-      await wait(play, 600);
-      const example = evaluationExample(play.run.maze, round, previous);
-      play.run.view.picked = example.cell;
-      drawLessonView();
-      showExample(example.text);
+    // ---------- Sweeps, one at a time ----------
+    // Policy evaluation (chapters 2 and 4) and value iteration (chapter 5) work every value out
+    // sweep by sweep. A "trace" keeps every sweep, so the class can step through them:
+    // values[0] has every value at 0, and values[k] the values after sweep k.
+    // "rule" says how a square's new value comes from its 4 scores, which are worked out from the
+    // values after the sweep before: "average" (moving at random), "arrow" (the score of the
+    // policy's action, "plan") or "best" (value iteration).
+
+    function makeTrace(maze, sweeps, rule, plan = null) {
+      const zeros = Object.fromEntries(lessonStates(maze).map((cell) => [cell, 0]));
+      return { rule, plan, values: [zeros, ...sweeps] };
     }
 
-    // One round of step 5: the changed arrows glow, then the numbers rise to the new policy's
-    // values (they never go down). With "Play all rounds" on, the next round follows by itself.
-    async function playRound(play, round, next, after) {
-      const { maze } = play.run;
-      glowSquares(lessonStates(maze).filter((cell) => round.changedCells.includes(cell)));
-      await wait(play, 1400);
-      if (next !== undefined) {
-        await asDemo(play, async () => {
-          const from = round.values;
-          const to = next.values;
-          for (let frame = 1; frame <= 8; frame += 1) {
-            await wait(play, 110);
-            play.run.view.values = Object.fromEntries(Object.keys(to).map((cell) => [cell, from[cell] + (to[cell] - from[cell]) * frame / 8]));
-            drawLessonView();
-          }
-          play.run.view.legend = `Value with policy ${after}`;
-          drawLessonView();
-        });
-        const purple = (values) => lessonStates(maze).filter((cell) => values[cell] > 0.005).length;
-        showExample(`${changedText(round)} Purple squares: ${purple(next.values)} (was ${purple(round.values)}).`);
+    function sweepCount(trace) {
+      return trace.values.length - 1;
+    }
+
+    // The 4 scores of a square with some values: each move's reward plus the discounted value of
+    // where it lands (only the reward, if the move ends the episode).
+    function sweepScores(maze, values, cell) {
+      return Object.fromEntries(ACTIONS.map((action) => {
+        const step = maze.steps[cell][action];
+        return [action, step.done ? step.reward : step.reward + DISCOUNT * values[step.next]];
+      }));
+    }
+
+    // The actions with the best score (more than one when they tie).
+    function bestActions(scores) {
+      const best = Math.max(...ACTIONS.map((action) => scores[action]));
+      return ACTIONS.filter((action) => isTie(scores[action], best));
+    }
+
+    // The biggest change to any value in sweep "at".
+    function biggestChange(maze, trace, at) {
+      return Math.max(0, ...lessonStates(maze).map((cell) => Math.abs(trace.values[at][cell] - trace.values[at - 1][cell])));
+    }
+
+    // The last sweep that changed a number the class can see (rounded to 2 decimals).
+    function lastVisibleChange(maze, trace) {
+      let last = 0;
+      for (let at = 1; at <= sweepCount(trace); at += 1) {
+        if (lessonStates(maze).some((cell) => formatValue(trace.values[at][cell]) !== formatValue(trace.values[at - 1][cell]))) last = at;
+      }
+      return last;
+    }
+
+    // Show a trace on the maze, from sweep "from": a number, "last" (where the class left this
+    // trace, at least sweep 1) or "end". "quiet" leaves out the worked example.
+    function startSweeps({ trace, legend, from = 0, quiet = false }) {
+      const at = from === "end" ? sweepCount(trace) : from === "last" ? Math.max(1, run.sweepMemory.get(trace) ?? 0) : from;
+      run.sweep = { trace, legend, at, quiet, chosen: null };
+      sweepPanel.hidden = false;
+      showSweep(at);
+    }
+
+    // Show sweep "at": its values on the maze, the counter and the worked example for one square.
+    // "stepped" makes the squares whose number changed glow. While "playing", the sweeps go by
+    // too fast for the worked example, so it waits until they stop.
+    function showSweep(at, { stepped = false, playing = false } = {}) {
+      const sweep = run.sweep;
+      const { trace } = sweep;
+      sweep.at = at;
+      run.sweepMemory.set(trace, at);
+      run.view.values = trace.values[at];
+      run.view.legend = sweep.legend;
+      sweepName.textContent = at === 0 ? "Every value starts at 0" : `Sweep ${at}`;
+      sweepChange.textContent = at === 0 ? "" : `Biggest change: ${formatChange(biggestChange(run.maze, trace, at))}${at === sweepCount(trace) ? " · stop" : ""}`;
+      if (stepped) outlineSquares(lessonStates(run.maze).filter((cell) => formatValue(trace.values[at][cell]) !== formatValue(trace.values[at - 1][cell])));
+      if (playing || sweep.quiet) {
+        run.marks.replaceChildren();
+        run.view.picked = null;
+        run.view.comparing = null;
+        if (playing) showExample(null);
+      } else {
+        explainSweep();
+      }
+      drawLessonView();
+      refreshTools();
+      run.slides[run.slide].onSweep?.(at);
+    }
+
+    // The worked example for one square: the square the class tapped, or else one whose number
+    // just changed. Its 4 scores appear around it, and the panel shows how they make its value.
+    function explainSweep() {
+      const { trace, at, chosen } = run.sweep;
+      const maze = run.maze;
+      run.marks.replaceChildren();
+      const cell = chosen ?? sweepExampleCell(maze, trace, at);
+      run.view.picked = cell;
+      run.view.comparing = at > 0 ? cell : null;
+      if (cell === null) {
+        showExample(at === 0 ? "Press Next sweep to update every square once." : "No number you can see changed in this sweep: every change was smaller than 0.01.");
+      } else if (at === 0) {
+        showExample(`${squareName(cell)} is 0, like every square before the first sweep.`);
+      } else {
+        const scores = sweepScores(maze, trace.values[at - 1], cell);
+        const marked = trace.rule === "average" ? [] : trace.rule === "arrow" ? [trace.plan[cell]] : bestActions(scores);
+        showActionScores(cell, scores, ACTIONS, marked);
+        showExample(sweepWorkedOut(maze, trace, at, cell, scores));
+      }
+    }
+
+    // A square to explain sweep "at" on: one that just got its first number if there is one (that
+    // is where the values are spreading), else one whose number changed. Never Harty's square or
+    // a portal, so nothing hides the scores.
+    function sweepExampleCell(maze, trace, at) {
+      if (at === 0) return null;
+      const before = trace.values[at - 1];
+      const after = trace.values[at];
+      const candidates = lessonStates(maze).filter((cell) => cell !== maze.start && !maze.portalColors.has(cell));
+      const changed = candidates.filter((cell) => formatValue(after[cell]) !== formatValue(before[cell]));
+      const reached = changed.filter((cell) => formatValue(before[cell]) === "0");
+      const highest = (cells) => [...cells].sort((a, b) => after[b] - after[a])[0];
+      if (changed.length === 0 && at === sweepCount(trace)) {
+        // The values have settled: show a square whose value comes from a neighbor's value.
+        const fromNeighbor = candidates.filter((cell) => ACTIONS.some((action) => {
+          const step = maze.steps[cell][action];
+          return !step.done && formatValue(before[step.next]) !== "0" && (trace.rule !== "arrow" || action === trace.plan[cell]);
+        }));
+        return highest(fromNeighbor) ?? null;
+      }
+      return highest(reached) ?? highest(changed) ?? null;
+    }
+
+    // "C2 after sweep 3 = (↑ 0.23 + ↓ 0 + ← 0.05 + → 1) ÷ 4 = 0.32", then a line on how one of the
+    // scores was worked out: "↑ Up lands on C1, worth 0.25 after sweep 2: 0 + 0.9 × 0.25 = 0.23."
+    function sweepWorkedOut(maze, trace, at, cell, scores) {
+      const before = trace.values[at - 1];
+      const listed = ACTIONS.map((action) => `${ARROWS[action]} ${formatValue(scores[action])}`);
+      const counts = (action) => maze.steps[cell][action].done || formatValue(before[maze.steps[cell][action].next]) !== "0";
+      let how;
+      let shown;
+      if (trace.rule === "arrow") {
+        shown = trace.plan[cell];
+        how = `the score of its arrow, ${shown}`;
+      } else if (trace.rule === "best") {
+        shown = bestActions(scores)[0];
+        how = `the best of ${listed.join(", ")}`;
+      } else {
+        // Show a score that uses a value from the sweep before, if there is one.
+        const ranked = [...ACTIONS].sort((a, b) => Math.abs(scores[b]) - Math.abs(scores[a]));
+        shown = ranked.find((action) => counts(action) && !maze.steps[cell][action].done) ?? ranked.find(counts) ?? ACTIONS[0];
+        how = `(${listed.join(" + ")}) ÷ ${ACTIONS.length}`;
+      }
+      const others = trace.rule === "average" && ACTIONS.every((action) => action === shown || !counts(action))
+        ? " The other moves land on squares still worth 0, so they score 0."
+        : "";
+      return `${squareName(cell)} after sweep ${at} = ${how} = ${formatValue(trace.values[at][cell])}\n${moveWorkedOut(maze, cell, shown, before, at)}${others}`;
+    }
+
+    // "→ Right lands on E5: the treasure, +1." or "↑ Up lands on C1, worth 0.25 after sweep 2:
+    // 0 + 0.9 × 0.25 = 0.23." The values are the ones from before sweep "at".
+    function moveWorkedOut(maze, cell, action, before, at) {
+      const step = maze.steps[cell][action];
+      const name = `${ARROWS[action]} ${action[0].toUpperCase()}${action.slice(1)}`;
+      if (step.done) return `${name} lands on ${step.reward > 0 ? "the treasure" : "a hole"}: ${formatReward(step.reward)}.`;
+      const where = step.next === cell
+        ? `bumps the wall and stays on ${squareName(cell)}`
+        : `lands on ${squareName(step.next)}${step.portalFrom !== null ? " (through the portal)" : ""}`;
+      const old = formatValue(before[step.next]);
+      const when = at === 1 ? "before sweep 1" : `after sweep ${at - 1}`;
+      return `${name} ${where}, worth ${old} ${when}: ${formatReward(step.reward)} + ${DISCOUNT} × ${old} = ${formatValue(step.reward + DISCOUNT * before[step.next])}.`;
+    }
+
+    // Tapping a square on a slide with sweeps explains it (once the sweeps stop, if they are playing).
+    function pickSweepSquare(cell) {
+      if (run.sweep === null || !lessonStates(run.maze).includes(cell)) return;
+      run.sweep.chosen = cell;
+      if (run.demo !== null) return;
+      explainSweep();
+      drawLessonView();
+    }
+
+    function sweepsFinished() {
+      return run !== null && run.sweep !== null && run.sweep.at >= sweepCount(run.sweep.trace);
+    }
+
+    // The "Next sweep" button: one sweep forward.
+    function nextSweep() {
+      if (run.sweep === null) return;
+      if (run.demo !== null) {
+        note("Let me finish showing you first!");
+      } else if (sweepsFinished()) {
+        note("The values have stopped changing. Press Next.");
+      } else {
+        showSweep(run.sweep.at + 1, { stepped: true });
+      }
+    }
+
+    // Play the sweeps from the one on screen to sweep "end", faster when there are many of them.
+    // At the end the worked example comes back, unless "explain" is false.
+    async function playSweepsTo(play, end, explain = true) {
+      const current = play.run;
+      await asDemo(play, async () => {
+        const from = current.sweep.at;
+        const time = Math.min(SWEEP_TIME_MS, SWEEPS_TIME_LIMIT_MS / Math.max(1, end - from));
+        for (let at = from + 1; at <= end; at += 1) {
+          await wait(play, time);
+          showSweep(at, { playing: true });
+        }
+      });
+      if (explain && !current.sweep.quiet) {
+        explainSweep();
+        drawLessonView();
+      }
+    }
+
+    // A new policy in chapter 4. Improve: the arrows that changed glow. Evaluate: every value
+    // starts at 0 again, and the sweeps play until the values settle. With "Play all policies"
+    // on, the next policy follows by itself.
+    async function playRound(play, round, trace, after, tally) {
+      showLoop("improve");
+      glowSquares(round.changedCells);
+      await wait(play, 1600);
+      if (trace !== undefined) {
+        showLoop("evaluate");
+        hartySays(`Now I evaluate policy ${after}. Every value starts at 0 again.`);
+        startSweeps({ trace, legend: `Value with policy ${after}`, from: 0 });
+        await wait(play, 500);
+        await playSweepsTo(play, sweepCount(trace), false);
+        hartySays(`Evaluating policy ${after} took ${plural(sweepCount(trace), "sweep")}.`);
+        showExample(`${changedText(round)}\n${tally}`);
       }
       if (play.run.autoRounds) {
         await wait(play, 1800);
@@ -5141,7 +5656,14 @@
       }
     }
 
-    // Step 7: learn again with another discount, and show the values and policy it gives.
+    // "Sweeps to evaluate each policy: policy 0 (random moves) 83, policy 1: 6, ... Total: 159."
+    function sweepsPerPolicyText(traces) {
+      const counts = traces.map(sweepCount);
+      const parts = counts.map((count, policy) => (policy === 0 ? `policy 0 (random moves): ${count}` : `policy ${policy}: ${count}`));
+      return `Sweeps to evaluate each policy: ${parts.join(", ")}.\nTotal: ${counts.reduce((sum, count) => sum + count, 0)} sweeps.`;
+    }
+
+    // Chapter 6: learn again with another discount, and show the values and policy it gives.
     // Gives back that policy.
     function showDiscount(play, discount) {
       const { maze } = play.run;
@@ -5172,7 +5694,7 @@
 
     // ---------- Harty walking ----------
 
-    // Step 2: one episode of random moves.
+    // Chapter 2: one episode of random moves.
     async function walkAtRandom(play, from = play.run.maze.start) {
       play.run.walks += 1;
       const attempt = simulateAttempt(play.run.maze, () => randomMove(play.run.walkRandom), from);
@@ -5193,7 +5715,8 @@
 
     function moveInLesson(action, held = false) {
       const slide = run.slides[run.slide];
-      run.autoRounds = false;                // any press stops "Play all rounds"
+      run.autoRounds = false;                // any press stops "Play all policies"
+      refreshTools();
       if (run.demo !== null) {
         if (!held && !run.waitNoted) {
           note("Let me finish showing you first!");
@@ -5228,7 +5751,7 @@
         if (current.demo === play) {
           current.demo = null;
           updatePad();
-          if (current.waitNoted && current === run) note(current.slides[current.slide].note ?? "");
+          if (current.waitNoted && current === run) note(slideNote(current.slides[current.slide]));
           current.waitNoted = false;
         }
       }
@@ -5318,7 +5841,7 @@
         current.view.comparing = cell;   // the square's own number makes room for the scores
         drawLessonView();
         current.marks.replaceChildren();
-        showActionScores(current.maze, round, cell, isBest ? ACTIONS : [...current.quiz]);
+        showActionScores(cell, round.scores[cell], isBest ? ACTIONS : [...current.quiz]);
         hartySays(quizLine(current.maze, round, cell, action, isBest));
         if (isBest && whenFound !== null) whenFound();
       } finally {
@@ -5337,11 +5860,11 @@
       return `${name} scores ${score}. Is there a better one?`;
     }
 
-    // The recipe slide: the step circles that do each part of the recipe light up in turn.
+    // The end of chapter 1: the circles of the chapters where Harty learns light up in turn.
     async function lightRecipe(play) {
-      for (const step of [2, 3, 4, 5]) {
+      for (const chapter of [2, 3, 4]) {
         await wait(play, 900);
-        const button = lessonStepButtons[step - 1];
+        const button = chapterButtons[chapter];
         button.classList.add("is-hint");
         setTimeout(() => button.classList.remove("is-hint"), 1100 / runSpeed);
       }
@@ -5583,6 +6106,17 @@
       }
     }
 
+    // Squares whose number just changed in a sweep get a quick outline, which leaves their
+    // colors readable even when the class presses "Next sweep" fast.
+    function outlineSquares(cells) {
+      for (const cell of cells) {
+        const { row, column } = readKey(cell);
+        playOnce("rect", { x: MARGIN + column * CELL + 9, y: MARGIN + row * CELL + 9, width: CELL - 18, height: CELL - 18, rx: 10, class: "fx fx-changed" }, [
+          { opacity: 0 }, { opacity: 1, offset: 0.15 }, { opacity: 0 }
+        ], { duration: 1100 / runSpeed });
+      }
+    }
+
     // The reward for a move floats up from where Harty lands: a big +1 or −1, or a small 0.
     function rewardPop(cell, reward) {
       const center = cellCenter(cell);
@@ -5644,6 +6178,14 @@
       return formatValue(value);
     }
 
+    // How much the values changed in a sweep, to one digit: 0.23, 0.003, 0.0000009, or 0.
+    function formatChange(value) {
+      if (value === 0) return "0";
+      if (value >= 0.005) return formatValue(value);
+      const rounded = Number(value.toPrecision(1));
+      return rounded.toFixed(Math.ceil(-Math.log10(rounded) - 1e-9));
+    }
+
     // "1 move", "3 moves".
     function plural(count, word) {
       return `${count} ${word}${count === 1 ? "" : "s"}`;
@@ -5659,36 +6201,6 @@
     function formatValue(value) {
       if (Math.abs(value - Math.round(value)) < 0.005) return formatReward(Math.round(value)).replace("+", "");
       return value.toFixed(2).replace("-", "−");
-    }
-
-    // A worked example of policy evaluation for one state, with this round's real numbers.
-    // It prefers a state whose arrow leads to another state that has a value, so the
-    // "reward + 0.9 × next value" part shows, and keeps away from Harty's own square.
-    // "previous" is the values before (to prefer a state whose value just changed), or null.
-    function evaluationExample(maze, round, previous) {
-      const plan = round.scored;
-      const values = round.values;
-      const others = lessonStates(maze).filter((cell) => cell !== maze.start);
-      const states = [...others, maze.start];
-      const leadsOn = (cell) => {
-        const step = maze.steps[cell][plan[cell]];
-        return !step.done && Math.abs(values[step.next]) > 0.005;
-      };
-      const justChanged = (cell) => previous !== null && Math.abs(values[cell] - previous[cell]) > 0.005;
-      if (states.every((state) => Math.abs(values[state]) < 0.005)) {
-        return { cell: null, text: "None of these arrows lead to the treasure or a hole, so every value stays 0." };
-      }
-      const cell = states.find((state) => leadsOn(state) && justChanged(state))
-        ?? states.find(leadsOn)
-        ?? states.find((state) => maze.steps[state][plan[state]].done)
-        ?? maze.start;
-      const action = plan[cell];
-      const step = maze.steps[cell][action];
-      if (step.done) {
-        return { cell, text: `${squareName(cell)}: going ${action} ${step.reward > 0 ? "reaches the treasure" : "falls into a hole"}, so its value is ${formatReward(step.reward)}.` };
-      }
-      const via = step.portalFrom !== null ? ", through the portal" : "";
-      return { cell, text: `${squareName(cell)}: value = ${formatReward(step.reward)} + ${DISCOUNT} × ${formatValue(values[step.next])} (the value of ${squareName(step.next)}${via}) = ${formatValue(values[cell])}` };
     }
 
     // A square to show policy improvement on: it prefers a state whose action changed and that has
@@ -5979,6 +6491,25 @@
     howTo.addEventListener("click", (event) => {
       if (event.target === howTo && swipeStart?.outside) howTo.close();
       swipeStart = null;
+    });
+
+    // =====================================================================
+    // CREDITS
+    // =====================================================================
+
+    // ASSUMPTION: like the guide, opening the credits during the lesson doesn't pause it.
+    function openCredits() {
+      if (howTo.open) howTo.close();
+      if (!credits.open) credits.showModal();
+      document.querySelector("#credits-done").focus();
+    }
+
+    document.querySelector("#credits-open").addEventListener("click", openCredits);
+    document.querySelector("#credits-close").addEventListener("click", () => credits.close());
+    document.querySelector("#credits-done").addEventListener("click", () => credits.close());
+    // A tap on the dark area around the credits closes them.
+    credits.addEventListener("click", (event) => {
+      if (event.target === credits) credits.close();
     });
 
     // =====================================================================
